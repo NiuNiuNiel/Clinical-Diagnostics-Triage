@@ -28,6 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="api_key.txt" />
+    <Content Include="Models\Chest_XRay_Vision_Model.keras" />
     <Content Include="Models\Heartbeat_Abnormality_Model.keras" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />

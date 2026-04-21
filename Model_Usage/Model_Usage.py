@@ -16,6 +16,8 @@ with open("API_key.txt", "r") as f:
 GLM_model = zai.ZAI(api_key=API_key)
 
 classes = {"Heartbeat_Abnormality_Model" : ["Normal", 'Supraventricular Ectopic Beats', 'Ventricular Ectopic Beats', 'Fusion Beats', 'Unknown'],
+           "Chest_XRay_Vision_Model" : ["Normal", 'Pneumonia'],
+
            }
 
 
@@ -33,9 +35,9 @@ Available Models:
    
 2. "Chest_XRay_Vision_Model": 
    - Data Type: 2D medical imaging (e.g., .png, .jpg, .jpeg chest X-rays).
-   - Purpose: Detects pulmonary abnormalities from chest radiographs.
-   - Classes Detected: "Normal", "Pneumonia", "Pleural Effusion". 
-   - Routing Logic: Trigger this model if an image file is attached and clinical notes mention respiratory issues (severe cough, fever, shortness of breath, lung imaging). 
+   - Purpose: Detects the presence of pneumonia from chest radiographs.
+   - Classes Detected: "Normal", "Pneumonia". 
+   - Routing Logic: Trigger this model if an image file is attached and clinical notes mention respiratory issues (severe cough, fever, shortness of breath, lung imaging).
 
 Review the user's request and the attached files. If a file corresponds to an available model, you must generate an AI node for it.
 
@@ -46,7 +48,7 @@ You MUST respond ONLY with a valid JSON object matching this schema exactly:
     "AI_nodes": [
         {
             "model_name": "string",
-            "modification": "string" or None,
+            "modifications": ["string"] or None,
             "file_path": "string",
             "headers": integer or None
         }
@@ -58,8 +60,12 @@ Each field is defined as follows:
 - "requires_model": A boolean indicating whether a model is required for the task.
 - "AI_nodes": A list of objects, where each object represents an individual processing task. This allows the system to process multiple files or apply different models in a single request. Each object in the list must contain the specific configuration for that file.
 - "model_name": The name of the model to be used for this specific node.
-- "modification": Any modifications to be applied on the data.
-    - For Tabular/Signal data (csv,tsv,json,...): Choose ONLY from "forward_fill", "fill_zero", "drop_missing", or None if no cleaning is needed.
+- "modifications": A list of modifications to be applied on the data.
+    - For Tabular/Signal data (csv,tsv,json,...): 
+        - "forward_fill" to fill missing values with the last valid observation,
+        - "fill_zero" to fill missing values with zero,
+        - "drop_missing" to drop rows with missing values.
+        - None if no cleaning is needed.
     - For Image data (png,jpg,jpeg): Set to None (the backend automatically handles standard tensor reshaping)
 - "file_path": The path of the file being processed in this node.
 - "headers": An integer indicating the row number to be used as headers for this file, or null if there are no headers.
@@ -102,16 +108,19 @@ def modification_func(data, modification):
         return data.fillna(0)
     elif modification == "drop_missing":
         return data.dropna()
+    elif modification == None:
+        return
     else:
         raise ValueError("Unsupported modification type")
 
-def AI_node(model_name, modification, file_path, headers):
+def AI_node(model_name, modifications, file_path, headers):
     model = load_model(model_name + ".keras")
 
     file_data = read_file(file_path, headers=headers)
 
-    if modification != None:
-        file_data = modification_func(file_data, modification)
+    if modifications != None:
+        for modification in modifications:
+            file_data = modification_func(file_data, modification)
 
     file_name = file_path.split("/")[-1]
 
