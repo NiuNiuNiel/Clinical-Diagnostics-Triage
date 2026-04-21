@@ -1,4 +1,3 @@
-from pyexpat import model
 from tensorflow.keras.models import load_model
 import pandas as pd
 import numpy as np
@@ -24,7 +23,6 @@ classes = {"Heartbeat_Abnormality_Model" : ["Normal", 'Supraventricular Ectopic 
 model_choosing_context = """
 
 
-
 You MUST respond ONLY with a valid JSON object matching this schema exactly:
 {
     "response_summary": "string",
@@ -32,9 +30,9 @@ You MUST respond ONLY with a valid JSON object matching this schema exactly:
     "AI_nodes": [
         {
             "model_name": "string",
-            "modification": "string or null",
+            "modification": "string" or None,
             "file_path": "string",
-            "headers": "integer or null"
+            "headers": integer or None
         }
     ]
 }
@@ -58,6 +56,8 @@ model_choosing_response = GLM_model.chat.completions.create(
 )
 
 model_choosing = ast.literal_eval(model_choosing_response.choises[0].message.content)
+
+print(model_choosing.get("response_summary"))
 
 def read_file(file_path, headers):
     file_type = file_path.split(".")[-1].lower()
@@ -106,17 +106,41 @@ def AI_node(model_name, modification, file_path, headers):
     predictions = model.predict(file_data.values)
     return {file_name:[{"Index":index, "Prediction":classes[model_name][np.argmax(prediction, axis=-1)], "Confident Score":f"{np.max(prediction, axis=-1)*100:.2f}%"} for index,prediction in enumerate(predictions)]}
 
+print("Utilizing AI nodes...")
+
 if model_choosing["requires_model"]:
     AI_nodes_results = []
     for node in model_choosing["AI_nodes"]:
         AI_nodes_results.append(AI_node(model_name=node["model_name"], modification=node["modification"], file_path=node["file_path"], headers=node["headers"]))
 
 
-# Notes and Predictions (if any) analysis
-analysis_context = f"""
 
+# Notes and Predictions (if any) analysis
+print(f"Analysing Clinical Notes {f'together with AI Nodes Results' if model_choosing["requires_model"] else ''} ...")
+
+analysis_context = """
+
+You MUST respond ONLY with a valid JSON object matching this schema exactly:
+{
+    "triage_priority": integer,
+    "patient_summary": "string"
+}
+
+Each field is defined as follows:
+- "triage_priority": An integer range from 1 to 5, where 1 indicates the highest priority for immediate attention and 5 indicates the lowest priority for non-urgent cases.
+- "patient_summary": A brief summary of the patient's condition, including key symptoms, relevant medical history, and any critical information that would assist healthcare professionals in understanding the patient's situation quickly and effectively.
 
 """
 
 if model_choosing["requires_model"]:
     analysis_context += f"AI nodes results:\n{AI_nodes_results}"
+
+Analysis_response = GLM_model.chat.completions.create(
+    model="glm-5.1",
+    messages=None,
+    stream=True
+)
+
+Analysis = ast.literal_eval(Analysis_response.choises[0].message.content)
+
+print(Analysis)
