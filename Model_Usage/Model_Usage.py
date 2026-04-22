@@ -15,8 +15,8 @@ with open("API_key.txt", "r") as f:
 
 GLM_model = zai.ZAI(api_key=API_key)
 
-classes = {"Heartbeat_Abnormality_Model" : ["Normal", 'Supraventricular Ectopic Beats', 'Ventricular Ectopic Beats', 'Fusion Beats', 'Unknown'],
-           "Chest_XRay_Vision_Model" : ["Normal", 'Pneumonia'],
+classes = {"Heartbeat_Abnormality_Model" : ['Normal', 'Supraventricular Ectopic Beats', 'Ventricular Ectopic Beats', 'Fusion Beats', 'Unknown'],
+           "Chest_XRay_Vision_Model" : ['Normal', 'Pneumonia'],
 
            }
 
@@ -152,8 +152,8 @@ Your task is to correlate the physician's original clinical notes with the autom
 
 Rules for Triage:
 1. Compare the AI's "Prediction" and "Confidence Score" with the patient's reported symptoms.
-2. If the AI detects an abnormality with high confidence and symptoms align, escalate the priority.
-3. If the AI results are contradictory, ambiguous, or the confidence score is low, flag the record for human review.
+2. If the AI detects an abnormality with atleast 90% confidence and symptoms align, escalate the priority.
+3. If the AI results are contradictory, ambiguous, or the confidence score is lower than 90%, flag the record for human review.
 
 Original Physician Notes: {user_prompt}
 Attached Files: {files_attached}
