@@ -5,84 +5,57 @@ import ast
 import sys
 import zai
 from PIL import Image
+import requests
+import base64
 
 
 
 user_prompt = sys.argv[1]
-files_attached = sys.argv[2:]
+file_as_prompt = sys.argv[2]
+files_attached = sys.argv[3:]
+url = "https://api.z.ai/api/paas/v4/files"
+mime_map = {
+  "png": "image/png",
+  "jpeg": "image/jpeg",
+  "jpg": "image/jpeg",
+  "doc": "application/msword",
+  "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "txt": "text/plain",
+  "pdf": "application/pdf",
+  "csv": "text/csv",
+  "tsv": "text/tab-separated-values",
+  "json": "application/json"
+}
+
+
 with open("API_key.txt", "r") as f:
     API_key = f.read().strip()
+
+headers = {"Authorization": f"Bearer {API_key}"}
+
+file_IDs = []
+
+for file in files_attached:
+    file_type = file.split(".")[-1].lower()
+
+    with open(file, "rb") as f:
+        files = {
+            "file": (file, f, mime_map.get(file_type))
+        }
+        data = {
+            "purpose": "agent"
+        }
+    
+        response = requests.post(url, headers=headers, files=files, data=data)
+
+    file_IDs.append(response.json()["id"])
 
 GLM_model = zai.ZAI(api_key=API_key)
 
 classes = {"Heartbeat_Abnormality_Model" : ['Normal', 'Supraventricular Ectopic Beats', 'Ventricular Ectopic Beats', 'Fusion Beats', 'Unknown'],
            "Chest_XRay_Vision_Model" : ['Normal', 'Pneumonia'],
-
            }
 
-
-# Model Choosing
-model_choosing_context = """
-You are the routing agent for an intelligent Clinical Diagnostics Triage Copilot. 
-Your primary task is to analyze the user's clinical notes and attached files to determine if specialized AI diagnostic models need to be executed before making a final triage decision.
-
-Available Models:
-1. "Heartbeat_Abnormality_Model": 
-   - Data Type: 1D signal data (e.g., .csv, .tsv containing ECG readings).
-   - Purpose: Detects cardiac arrhythmias.
-   - Classes Detected: "Normal", "Supraventricular Ectopic Beats", "Ventricular Ectopic Beats", "Fusion Beats", "Unknown".
-   - Routing Logic: Trigger this model if a tabular file is attached and clinical notes mention heart-related symptoms (palpitations, chest pain, irregular rhythm, ECG/EKG).
-   
-2. "Chest_XRay_Vision_Model": 
-   - Data Type: 2D medical imaging (e.g., .png, .jpg, .jpeg chest X-rays).
-   - Purpose: Detects the presence of pneumonia from chest radiographs.
-   - Classes Detected: "Normal", "Pneumonia". 
-   - Routing Logic: Trigger this model if an image file is attached and clinical notes mention respiratory issues (severe cough, fever, shortness of breath, lung imaging).
-
-Review the user's request and the attached files. If a file corresponds to an available model, you must generate an AI node for it.
-
-You MUST respond ONLY with a valid JSON object matching this schema exactly:
-{
-    "response_summary": "string",
-    "requires_model": boolean,
-    "AI_nodes": [
-        {
-            "model_name": "string",
-            "modifications": ["string"] or None,
-            "file_path": "string",
-            "headers": integer or None
-        }
-    ]
-}
-
-Each field is defined as follows:
-- "response_summary": A concise summary of the user's request and the intended action.
-- "requires_model": A boolean indicating whether a model is required for the task.
-- "AI_nodes": A list of objects, where each object represents an individual processing task. This allows the system to process multiple files or apply different models in a single request. Each object in the list must contain the specific configuration for that file.
-- "model_name": The name of the model to be used for this specific node.
-- "modifications": A list of modifications to be applied on the data.
-    - For Tabular/Signal data (csv,tsv,json,...): 
-        - "forward_fill" to fill missing values with the last valid observation,
-        - "fill_zero" to fill missing values with zero,
-        - "drop_missing" to drop rows with missing values.
-        - None if no cleaning is needed.
-    - For Image data (png,jpg,jpeg): Set to None (the backend automatically handles standard tensor reshaping)
-- "file_path": The path of the file being processed in this node.
-- "headers": An integer indicating the row number to be used as headers for this file, or null if there are no headers.
-"""
-
-model_choosing_response = GLM_model.chat.completions.create(
-    model="glm-5.1",
-    messages=[
-        {"role": "system", "content": model_choosing_context},
-        {"role": "user", "content": f"User Prompt: {user_prompt}\nAttached Files: {files_attached}"}
-    ],
-    stream=False
-)
-
-model_choosing = ast.literal_eval(model_choosing_response.choises[0].message.content)
-
-print(model_choosing.get("response_summary"))
 
 def read_file(file_path, headers):
     file_type = file_path.split(".")[-1].lower()
@@ -134,29 +107,120 @@ def AI_node(model_name, modifications, file_path, headers):
     predictions = model.predict(file_data.values)
     return {file_name:[{"Index":index, "Prediction":classes[model_name][np.argmax(prediction, axis=-1)], "Confident Score":f"{np.max(prediction, axis=-1)*100:.2f}%"} for index,prediction in enumerate(predictions)]}
 
-print("Utilizing AI nodes...")
+
+# Model Choosing
+model_choosing_context = """
+You are the routing agent for an intelligent Clinical Diagnostics Triage Copilot. 
+Your primary task is to analyze the user's clinical notes and attached files (if any) to determine if specialized AI diagnostic models need to be executed before making a final triage decision.
+
+Available Models:
+1. "Heartbeat_Abnormality_Model": 
+   - Data Type: 1D signal data (e.g., .csv, .tsv containing ECG readings).
+   - Purpose: Detects cardiac arrhythmias.
+   - Classes Detected: "Normal", "Supraventricular Ectopic Beats", "Ventricular Ectopic Beats", "Fusion Beats", "Unknown".
+   - Routing Logic: Trigger this model if a tabular file is attached and clinical notes mention heart-related symptoms (palpitations, chest pain, irregular rhythm, ECG/EKG).
+   
+2. "Chest_XRay_Vision_Model": 
+   - Data Type: 2D medical imaging (e.g., .png, .jpg, .jpeg chest X-rays).
+   - Purpose: Detects the presence of pneumonia from chest radiographs.
+   - Classes Detected: "Normal", "Pneumonia". 
+   - Routing Logic: Trigger this model if an image file is attached and clinical notes mention respiratory issues (severe cough, fever, shortness of breath, lung imaging).
+
+Review the user's request and the attached files. If a file corresponds to an available model, you must generate an AI node for it.
+
+You MUST respond ONLY with a valid JSON object matching this schema exactly:
+{
+    "response_summary": "string",
+    "requires_model": boolean,
+    "AI_nodes": [
+        {
+            "model_name": "string",
+            "modifications": ["string"] or None,
+            "file_path": "string",
+            "headers": integer or None
+        }
+    ]
+}
+
+Each field is defined as follows:
+- "response_summary": A concise summary of the user's request and the intended action.
+- "requires_model": A boolean indicating whether a model is required for the task.
+    - True if there is a suitable AI node.
+    - False if there is no suitable AI nodes or no files has been attached.
+- "AI_nodes": A list of objects, where each object represents an individual processing task. This allows the system to process multiple files or apply different models in a single request. Each object in the list must contain the specific configuration for that file.
+- "model_name": The name of the model to be used for this specific node.
+- "modifications": A list of modifications to be applied on the data.
+    - For Tabular/Signal data (csv,tsv,json,...): 
+        - "forward_fill" to fill missing values with the last valid observation,
+        - "fill_zero" to fill missing values with zero,
+        - "drop_missing" to drop rows with missing values.
+        - None if no cleaning is needed.
+    - For Image data (png,jpg,jpeg): Set to None (the backend automatically handles standard tensor reshaping)
+- "file_path": The path of the file being processed in this node.
+- "headers": An integer indicating the row number to be used as headers for this file, or null if there are no headers.
+"""
+
+try:
+    if len(file_IDs)  == 0:
+        model_choosing_response = GLM_model.chat.completions.create(
+            model="glm-5.1",
+            messages=[
+                {"role": "system", "content": model_choosing_context},
+                {"role": "user", "content": f"User Prompt: {user_prompt}"}
+            ],
+            stream=False
+        )
+    else:
+        model_choosing_response = GLM_model.chat.completions.create(
+            model="glm-5.1",
+            messages=[
+                {"role": "system", "content": model_choosing_context},
+                {"role": "user", "content": f"User Prompt: {user_prompt}"}
+            ],
+            tools=[
+                {
+                    "type": "retrieval",
+                    "retrieval": {
+                        "file_ids": file_IDs 
+                    }
+                }
+            ],
+            stream=False
+        )
+except zai.ZAIError.TokenLimitError as e:
+    raise e("Token limit exceeded")
+except Exception as e:
+    raise e("API call failed")
+
+model_choosing = ast.literal_eval(model_choosing_response.choises[0].message.content)
+
+print(model_choosing.get("response_summary"))
 
 if model_choosing["requires_model"]:
+    print("Utilizing AI nodes...")
     AI_nodes_results = []
     for node in model_choosing["AI_nodes"]:
-        AI_nodes_results.append(AI_node(model_name=node["model_name"], modification=node["modification"], file_path=node["file_path"], headers=node["headers"]))
-
+        AI_nodes_results.append(AI_node(model_name=node["model_name"], modifications=node["modifications"], file_path=node["file_path"], headers=node["headers"]))
 
 
 # Notes and Predictions (if any) analysis
 print(f"Analysing Clinical Notes {f'together with AI Nodes Results' if model_choosing["requires_model"] else ''} ...")
 
 analysis_context = f"""
-You are the final synthesis agent for a Clinical Diagnostics Triage Copilot. 
+You are the final synthesis agent for a Clinical Diagnostics Triage Copilot.
+{'''
 Your task is to correlate the physician's original clinical notes with the automated findings from specialized AI diagnostic models.
 
 Rules for Triage:
 1. Compare the AI's "Prediction" and "Confidence Score" with the patient's reported symptoms.
 2. If the AI detects an abnormality with atleast 90% confidence and symptoms align, escalate the priority.
 3. If the AI results are contradictory, ambiguous, or the confidence score is lower than 90%, flag the record for human review.
+''' if model_choosing["requires_model"] else
+'''
+Analyze the physician's notes. Based on the symptoms and information provided, determine the appropriate triage priority.
+'''}
 
 Original Physician Notes: {user_prompt}
-Attached Files: {files_attached}
 """
 
 if model_choosing["requires_model"]:
@@ -178,13 +242,35 @@ Each field is defined as follows:
 - "flagged_for_human_review": A boolean value indicating whether the case should be flagged for human review due to ambiguous or contradictory AI findings.
 """
 
-Analysis_response = GLM_model.chat.completions.create(
-    model="glm-5.1",
-    messages=[
-        {"role": "system", "content": analysis_context}
-    ],
-    stream=False
-)
+try:
+    if len(file_IDs)  == 0:
+        Analysis_response = GLM_model.chat.completions.create(
+        model="glm-5.1",
+            messages=[
+                {"role": "system", "content": analysis_context}
+            ],
+            stream=False
+        )
+    else:
+        Analysis_response = GLM_model.chat.completions.create(
+            model="glm-5.1",
+            messages=[
+                {"role": "system", "content": analysis_context}
+            ],
+            tools=[
+                {
+                    "type": "retrieval",
+                    "retrieval": {
+                        "file_ids": file_IDs 
+                    }
+                }
+            ],
+            stream=False
+        )
+except zai.ZAIError.TokenLimitError as e:
+    raise e("Token limit exceeded")
+except Exception as e:
+    raise e("API call failed")
 
 Analysis = ast.literal_eval(Analysis_response.choises[0].message.content)
 

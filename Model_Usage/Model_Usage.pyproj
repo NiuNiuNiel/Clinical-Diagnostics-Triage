@@ -21,10 +21,12 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="FHIR_R4_Handling.py" />
     <Compile Include="Model_Usage.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models\" />
+    <Folder Include="Activity_Log\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="api_key.txt" />
