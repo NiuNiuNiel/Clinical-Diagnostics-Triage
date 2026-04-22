@@ -29,6 +29,7 @@
     <Folder Include="Activity_Log\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Activity_Log\sample.txt" />
     <Content Include="api_key.txt" />
     <Content Include="Models\Chest_XRay_Vision_Model.keras" />
     <Content Include="Models\Heartbeat_Abnormality_Model.keras" />

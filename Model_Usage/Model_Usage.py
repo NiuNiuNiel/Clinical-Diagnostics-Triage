@@ -1,60 +1,12 @@
 from tensorflow.keras.models import load_model
 import pandas as pd
 import numpy as np
-import ast
 import sys
 import zai
 from PIL import Image
 import requests
-import base64
+import json
 
-
-
-user_prompt = sys.argv[1]
-file_as_prompt = sys.argv[2]
-files_attached = sys.argv[3:]
-url = "https://api.z.ai/api/paas/v4/files"
-mime_map = {
-  "png": "image/png",
-  "jpeg": "image/jpeg",
-  "jpg": "image/jpeg",
-  "doc": "application/msword",
-  "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "txt": "text/plain",
-  "pdf": "application/pdf",
-  "csv": "text/csv",
-  "tsv": "text/tab-separated-values",
-  "json": "application/json"
-}
-
-
-with open("API_key.txt", "r") as f:
-    API_key = f.read().strip()
-
-headers = {"Authorization": f"Bearer {API_key}"}
-
-file_IDs = []
-
-for file in files_attached:
-    file_type = file.split(".")[-1].lower()
-
-    with open(file, "rb") as f:
-        files = {
-            "file": (file, f, mime_map.get(file_type))
-        }
-        data = {
-            "purpose": "agent"
-        }
-    
-        response = requests.post(url, headers=headers, files=files, data=data)
-
-    file_IDs.append(response.json()["id"])
-
-GLM_model = zai.ZAI(api_key=API_key)
-
-classes = {"Heartbeat_Abnormality_Model" : ['Normal', 'Supraventricular Ectopic Beats', 'Ventricular Ectopic Beats', 'Fusion Beats', 'Unknown'],
-           "Chest_XRay_Vision_Model" : ['Normal', 'Pneumonia'],
-           }
 
 
 def read_file(file_path, headers):
@@ -71,6 +23,9 @@ def read_file(file_path, headers):
     elif file_type in ["png", "jpg", "jpeg"]:
         image = Image.open(file_path)
         return np.asarray(image)
+    elif file_type in ["doc", "docx", "txt", "pdf"]:
+        with open(file_path, "r") as f:
+            return f.read()
     else:
         raise ValueError("Unsupported file type")
 
@@ -106,6 +61,62 @@ def AI_node(model_name, modifications, file_path, headers):
 
     predictions = model.predict(file_data.values)
     return {file_name:[{"Index":index, "Prediction":classes[model_name][np.argmax(prediction, axis=-1)], "Confident Score":f"{np.max(prediction, axis=-1)*100:.2f}%"} for index,prediction in enumerate(predictions)]}
+
+
+
+user_prompt = sys.argv[1]
+
+file_as_prompt = sys.argv[2]
+
+if file_as_prompt != "None":
+    user_prompt += "\n" + read_file(file_as_prompt, headers=None)
+
+
+files_attached = sys.argv[3:]
+
+url = "https://api.z.ai/api/paas/v4/files"
+mime_map = {
+  "png": "image/png",
+  "jpeg": "image/jpeg",
+  "jpg": "image/jpeg",
+  "doc": "application/msword",
+  "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "txt": "text/plain",
+  "pdf": "application/pdf",
+  "csv": "text/csv",
+  "tsv": "text/tab-separated-values",
+  "json": "application/json"
+}
+
+
+with open("API_key.txt", "r") as f:
+    API_key = f.read().strip()
+
+headers = {"Authorization": f"Bearer {API_key}"}
+
+file_IDs = []
+
+if files_attached[0] != "None":
+    for file in files_attached:
+        file_type = file.split(".")[-1].lower()
+
+        with open(file, "rb") as f:
+            files = {
+                "file": (file, f, mime_map.get(file_type))
+            }
+            data = {
+                "purpose": "agent"
+            }
+    
+            response = requests.post(url, headers=headers, files=files, data=data)
+
+        file_IDs.append(response.json()["id"])
+
+GLM_model = zai.ZAI(api_key=API_key)
+
+classes = {"Heartbeat_Abnormality_Model" : ['Normal', 'Supraventricular Ectopic Beats', 'Ventricular Ectopic Beats', 'Fusion Beats', 'Unknown'],
+           "Chest_XRay_Vision_Model" : ['Normal', 'Pneumonia'],
+           }
 
 
 # Model Choosing
@@ -192,7 +203,7 @@ except zai.ZAIError.TokenLimitError as e:
 except Exception as e:
     raise e("API call failed")
 
-model_choosing = ast.literal_eval(model_choosing_response.choises[0].message.content)
+model_choosing = json.loads(model_choosing_response.choices[0].message.content)
 
 print(model_choosing.get("response_summary"))
 
@@ -272,6 +283,6 @@ except zai.ZAIError.TokenLimitError as e:
 except Exception as e:
     raise e("API call failed")
 
-Analysis = ast.literal_eval(Analysis_response.choises[0].message.content)
+Analysis = json.loads(Analysis_response.choices[0].message.content)
 
-print(Analysis)
+print(json.dumps(Analysis))

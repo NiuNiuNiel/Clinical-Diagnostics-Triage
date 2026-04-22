@@ -1,2 +1,5 @@
 import sys
-upload_material = sys.argv[1]
+import json
+
+upload_material = json.loads(sys.argv[1])
+
