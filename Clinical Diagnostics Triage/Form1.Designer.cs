@@ -37,62 +37,84 @@
             // 
             // rtbChatHistory
             // 
-            rtbChatHistory.Location = new Point(106, 26);
+            rtbChatHistory.BackColor = Color.FromArgb(30, 30, 30);
+            rtbChatHistory.BorderStyle = BorderStyle.None;
+            rtbChatHistory.Location = new Point(51, 38);
             rtbChatHistory.Name = "rtbChatHistory";
             rtbChatHistory.ReadOnly = true;
-            rtbChatHistory.Size = new Size(125, 120);
+            rtbChatHistory.Size = new Size(806, 339);
             rtbChatHistory.TabIndex = 0;
             rtbChatHistory.Text = "";
             rtbChatHistory.TextChanged += rtbChatHistory_TextChanged;
             // 
             // txtInput
             // 
-            txtInput.Location = new Point(201, 226);
+            txtInput.BackColor = Color.FromArgb(45, 45, 45);
+            txtInput.BorderStyle = BorderStyle.FixedSingle;
+            txtInput.ForeColor = Color.White;
+            txtInput.Location = new Point(51, 401);
             txtInput.Multiline = true;
             txtInput.Name = "txtInput";
-            txtInput.Size = new Size(125, 34);
+            txtInput.PlaceholderText = "Ask Niel, Your Professional Clinical Assistance";
+            txtInput.Size = new Size(676, 38);
             txtInput.TabIndex = 1;
+            txtInput.TextChanged += txtInput_TextChanged;
             // 
             // btnSend
             // 
-            btnSend.Location = new Point(136, 308);
+            btnSend.BackColor = Color.FromArgb(64, 64, 64);
+            btnSend.Cursor = Cursors.Hand;
+            btnSend.FlatAppearance.BorderSize = 0;
+            btnSend.FlatStyle = FlatStyle.Flat;
+            btnSend.Location = new Point(753, 404);
             btnSend.Name = "btnSend";
-            btnSend.Size = new Size(94, 29);
+            btnSend.Size = new Size(95, 33);
             btnSend.TabIndex = 2;
-            btnSend.Text = "button1";
-            btnSend.UseVisualStyleBackColor = true;
+            btnSend.Text = "Send";
+            btnSend.UseVisualStyleBackColor = false;
             btnSend.Click += btnSend_Click;
             // 
             // btnAttach
             // 
-            btnAttach.Location = new Point(340, 310);
+            btnAttach.BackColor = Color.FromArgb(64, 64, 64);
+            btnAttach.Cursor = Cursors.Hand;
+            btnAttach.FlatAppearance.BorderSize = 0;
+            btnAttach.FlatStyle = FlatStyle.Flat;
+            btnAttach.Location = new Point(51, 456);
             btnAttach.Name = "btnAttach";
-            btnAttach.Size = new Size(94, 29);
+            btnAttach.Size = new Size(106, 33);
             btnAttach.TabIndex = 3;
             btnAttach.Text = "📎";
-            btnAttach.UseVisualStyleBackColor = true;
+            btnAttach.UseVisualStyleBackColor = false;
             btnAttach.Click += btnAttach_Click;
             // 
             // btnNewPatient
             // 
-            btnNewPatient.Location = new Point(567, 314);
+            btnNewPatient.BackColor = Color.FromArgb(64, 64, 64);
+            btnNewPatient.Cursor = Cursors.Hand;
+            btnNewPatient.FlatAppearance.BorderSize = 0;
+            btnNewPatient.FlatStyle = FlatStyle.Flat;
+            btnNewPatient.Location = new Point(773, 12);
             btnNewPatient.Name = "btnNewPatient";
-            btnNewPatient.Size = new Size(94, 29);
+            btnNewPatient.Size = new Size(106, 33);
             btnNewPatient.TabIndex = 4;
-            btnNewPatient.Text = "button3";
-            btnNewPatient.UseVisualStyleBackColor = true;
+            btnNewPatient.Text = "New Chat";
+            btnNewPatient.UseVisualStyleBackColor = false;
             btnNewPatient.Click += btnNewPatient_Click;
             // 
             // Form1
             // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleDimensions = new SizeF(9F, 23F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            BackColor = Color.FromArgb(30, 30, 30);
+            ClientSize = new Size(900, 518);
             Controls.Add(btnNewPatient);
             Controls.Add(btnAttach);
             Controls.Add(btnSend);
             Controls.Add(txtInput);
             Controls.Add(rtbChatHistory);
+            Font = new Font("Segoe UI", 10.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            ForeColor = Color.WhiteSmoke;
             Name = "Form1";
             Text = "Form1";
             ResumeLayout(false);
