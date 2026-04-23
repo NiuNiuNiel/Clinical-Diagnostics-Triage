@@ -252,7 +252,7 @@ try:
             stream=False
         )
 
-    activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Call", details=f"Model choosing response: {model_choosing_response.choices[0].message.content}")
+    activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Call", details=f"Model choosing response: {model_choosing_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip()}")
 except zai.ZAIError.TokenLimitError as e:
     raise RuntimeError("Token limit exceeded") from e
 except Exception as e:
@@ -340,7 +340,7 @@ try:
             stream=False
         )
 
-    activity_logger(ID="Final_Analysis", _type="Final_Analysis_API_Call", details=f"Final analysis response: {Analysis_response.choices[0].message.content}")
+    activity_logger(ID="Final_Analysis", _type="Final_Analysis_API_Call", details=f"Final analysis response: {Analysis_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip()}")
 except zai.ZAIError.TokenLimitError as e:
     raise RuntimeError("Token limit exceeded") from e
 except Exception as e:
