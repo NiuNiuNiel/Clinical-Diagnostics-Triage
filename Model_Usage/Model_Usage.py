@@ -162,7 +162,10 @@ if files_attached[0] != "None":
 
         file_IDs.append(response.json()["id"])
 
-GLM_model = zai.ZAI(api_key=API_key)
+GLM_model = zai.ZaiClient(
+    api_key=API_key,
+    base_url="https://api.ilmu.ai/v1"
+    )
 
 classes = {"Heartbeat_Abnormality_Model" : ['Normal', 'Supraventricular Ectopic Beats', 'Ventricular Ectopic Beats', 'Fusion Beats', 'Unknown'],
            "Chest_XRay_Vision_Model" : ['Normal', 'Pneumonia'],
@@ -224,7 +227,7 @@ Each field is defined as follows:
 try:
     if len(file_IDs)  == 0:
         model_choosing_response = GLM_model.chat.completions.create(
-            model="glm-5.1",
+            model="ilmu-glm-5.1",
             messages=[
                 {"role": "system", "content": model_choosing_context},
                 {"role": "user", "content": f"User Prompt: {user_prompt}"}
@@ -233,7 +236,7 @@ try:
         )
     else:
         model_choosing_response = GLM_model.chat.completions.create(
-            model="glm-5.1",
+            model="ilmu-glm-5.1",
             messages=[
                 {"role": "system", "content": model_choosing_context},
                 {"role": "user", "content": f"User Prompt: {user_prompt}"}
@@ -314,7 +317,7 @@ Each field is defined as follows:
 try:
     if len(file_IDs)  == 0:
         Analysis_response = GLM_model.chat.completions.create(
-        model="glm-5.1",
+        model="ilmu-glm-5.1",
             messages=[
                 {"role": "system", "content": analysis_context}
             ],
@@ -322,7 +325,7 @@ try:
         )
     else:
         Analysis_response = GLM_model.chat.completions.create(
-            model="glm-5.1",
+            model="ilmu-glm-5.1",
             messages=[
                 {"role": "system", "content": analysis_context}
             ],
