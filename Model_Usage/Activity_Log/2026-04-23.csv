@@ -1,0 +1,14 @@
+1776952262_2_Model_Choosing, Model_Choosing_API_Call, Model choosing response: ```json
+{
+    "response_summary": "The user is requesting a mock test run without providing any clinical notes or attached files. No specialized diagnostic models are required as there are no files to process or clinical symptoms mentioned that would trigger a model.",
+    "requires_model": false,
+    "AI_nodes": []
+}
+```
+1776952277_9_Model_Choosing, Model_Choosing_API_Call, Model choosing response: ```json
+{
+    "response_summary": "User greeted the system with no clinical notes or attached files. No diagnostic models are required.",
+    "requires_model": false,
+    "AI_nodes": []
+}
+```

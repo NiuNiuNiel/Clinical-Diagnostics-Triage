@@ -25,6 +25,7 @@ namespace Clinical_Diagnostics_Triage
         );
         private List<ChatMessage> currentSessionHistory = new List<ChatMessage>();
         private string attachedFilePath = string.Empty;
+        private bool isFirstPrompt = true;
 
         public Form1()
         {
@@ -55,7 +56,7 @@ namespace Clinical_Diagnostics_Triage
 
                 string safePrompt = string.IsNullOrWhiteSpace(userPrompt) ? "None" : userPrompt.Replace("\"", "\\\"");
                 string safeFile = string.IsNullOrWhiteSpace(filePath) ? "None" : filePath;
-                string arguments = $"\"{scriptPath}\" \"{safePrompt}\" \"{safeFile}\"";
+                string arguments = $"\"{scriptPath}\" \"{safePrompt}\" \"{safeFile}\" \"None\"";
 
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
@@ -163,6 +164,14 @@ namespace Clinical_Diagnostics_Triage
             btnAttach.Enabled = false;
             string originalButtonText = btnSend.Text;
 
+            if (isFirstPrompt)
+            {
+                // Grab the first 35 characters of the prompt, or the whole thing if it's shorter
+                string titleText = prompt.Length > 35 ? prompt.Substring(0, 35) + "..." : prompt;
+                lblTitle.Text = titleText;
+                isFirstPrompt = false; // Prevent it from changing again until New Patient is clicked
+            }
+
             // 2. Print User Input
             rtbChatHistory.SelectionColor = Color.LightSkyBlue;
             rtbChatHistory.AppendText($"\nPhysician:\n{prompt}\n");
@@ -214,17 +223,33 @@ namespace Clinical_Diagnostics_Triage
                         rtbChatHistory.SelectionColor = Color.WhiteSmoke;
                         rtbChatHistory.AppendText("\n--- DIAGNOSTIC TRIAGE ALERT ---\n");
 
-                        rtbChatHistory.SelectionColor = payload.triage_priority == "1" || payload.triage_priority.ToLower().Contains("high") ? Color.Tomato : Color.Gold;
-                        rtbChatHistory.AppendText($"Priority: {payload.triage_priority}\n");
+                        // Check if the integer priority is 1
+                        rtbChatHistory.SelectionColor = payload.triage_priority == 1 ? Color.Tomato : Color.Gold;
+                        rtbChatHistory.AppendText($"Priority: Level {payload.triage_priority}\n");
 
                         rtbChatHistory.SelectionColor = Color.WhiteSmoke;
                         rtbChatHistory.AppendText($"Summary: {payload.clinical_summary}\n");
+                        rtbChatHistory.AppendText($"Reason: {payload.triage_reason}\n");
                         rtbChatHistory.AppendText($"Action: {payload.recommended_action}\n");
 
+                        // Print AI Node Results if the backend used them
+                        if (payload.AI_nodes_results != null && payload.AI_nodes_results.Count > 0)
+                        {
+                            rtbChatHistory.SelectionColor = Color.LightSkyBlue;
+                            rtbChatHistory.AppendText("\n[Automated AI Findings]:\n");
+                            foreach (var node in payload.AI_nodes_results)
+                            {
+                                rtbChatHistory.AppendText($"- {node.model_name} ({node.file_name})\n");
+                                rtbChatHistory.AppendText($"  {node.result.ToString()}\n");
+                            }
+                        }
+
+                        // Custom Human Intervention Warning
                         if (payload.flagged_for_human_review)
                         {
                             rtbChatHistory.SelectionColor = Color.Tomato;
-                            rtbChatHistory.AppendText("\n⚠️ SYSTEM WARNING: FLAGGED FOR HUMAN REVIEW ⚠️\nData was ambiguous or contradictory.\n");
+                            rtbChatHistory.AppendText("\n⚠️ HUMAN INTERVENTION REQUIRED ⚠️\n");
+                            rtbChatHistory.AppendText("The AI node results are flagged as potentially incorrect, ambiguous, or inaccurate. Manual physician review is strictly required.\n");
                         }
                     }
                 }
@@ -270,6 +295,10 @@ namespace Clinical_Diagnostics_Triage
             rtbChatHistory.Clear();
             txtInput.Clear();
             attachedFilePath = string.Empty;
+
+            // Reset the title and the tracker
+            isFirstPrompt = true;
+            lblTitle.Text = "Clinical Copilot";
         }
 
         private void rtbChatHistory_TextChanged(object sender, EventArgs e)
@@ -291,41 +320,26 @@ namespace Clinical_Diagnostics_Triage
 
         public class TriagePayload
         {
-            public string triage_priority { get; set; }
+            public int triage_priority { get; set; } // Changed from string to int
             public string clinical_summary { get; set; }
             public string recommended_action { get; set; }
+            public string triage_reason { get; set; } // Added new reason field
             public bool flagged_for_human_review { get; set; }
+            public List<AiNodeResult> AI_nodes_results { get; set; } // Added AI results list
+        }
+
+        public class AiNodeResult
+        {
+            public string file_name { get; set; }
+            public string model_name { get; set; }
+            public string reference_ID { get; set; }
+            public JsonElement result { get; set; } // JsonElement handles both dictionaries and arrays dynamically
         }
 
         private void txtInput_TextChanged(object sender, EventArgs e)
         {
-            // 1. Define your size limits
-            int minHeight = 35;  // Height for 1 row of text
-            int maxHeight = 100; // Max height before it stops growing (approx 4-5 rows)
-            int padding = 10;    // Extra space so text isn't cramped
-
-            // 2. Calculate how many lines of text there are
-            int lines = txtInput.GetLineFromCharIndex(txtInput.TextLength) + 1;
-
-            // Calculate the needed height (approx 20 pixels per line depending on font size)
-            int neededHeight = (lines * 20) + padding;
-
-            // 3. Apply the dynamic height
-            if (neededHeight <= minHeight)
-            {
-                txtInput.Height = minHeight;
-                txtInput.ScrollBars = ScrollBars.None;
-            }
-            else if (neededHeight >= maxHeight)
-            {
-                txtInput.Height = maxHeight;
-                txtInput.ScrollBars = ScrollBars.Vertical; // Turn on scrolling when max limit is hit
-            }
-            else
-            {
-                txtInput.Height = neededHeight;
-                txtInput.ScrollBars = ScrollBars.None;
-            }
+            // Force the text box to scroll down and follow the cursor as they type
+            txtInput.ScrollToCaret();
         }
 
         private void Form1_Load(object sender, EventArgs e)

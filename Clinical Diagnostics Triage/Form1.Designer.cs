@@ -33,13 +33,14 @@
             btnSend = new Button();
             btnAttach = new Button();
             btnNewPatient = new Button();
+            lblTitle = new Label();
             SuspendLayout();
             // 
             // rtbChatHistory
             // 
             rtbChatHistory.BackColor = Color.FromArgb(30, 30, 30);
             rtbChatHistory.BorderStyle = BorderStyle.None;
-            rtbChatHistory.Location = new Point(51, 38);
+            rtbChatHistory.Location = new Point(51, 59);
             rtbChatHistory.Name = "rtbChatHistory";
             rtbChatHistory.ReadOnly = true;
             rtbChatHistory.Size = new Size(806, 339);
@@ -52,11 +53,11 @@
             txtInput.BackColor = Color.FromArgb(45, 45, 45);
             txtInput.BorderStyle = BorderStyle.FixedSingle;
             txtInput.ForeColor = Color.White;
-            txtInput.Location = new Point(51, 401);
+            txtInput.Location = new Point(39, 376);
             txtInput.Multiline = true;
             txtInput.Name = "txtInput";
             txtInput.PlaceholderText = "Ask Niel, Your Professional Clinical Assistance";
-            txtInput.Size = new Size(676, 38);
+            txtInput.Size = new Size(818, 74);
             txtInput.TabIndex = 1;
             txtInput.TextChanged += txtInput_TextChanged;
             // 
@@ -66,7 +67,7 @@
             btnSend.Cursor = Cursors.Hand;
             btnSend.FlatAppearance.BorderSize = 0;
             btnSend.FlatStyle = FlatStyle.Flat;
-            btnSend.Location = new Point(753, 404);
+            btnSend.Location = new Point(746, 394);
             btnSend.Name = "btnSend";
             btnSend.Size = new Size(95, 33);
             btnSend.TabIndex = 2;
@@ -102,12 +103,22 @@
             btnNewPatient.UseVisualStyleBackColor = false;
             btnNewPatient.Click += btnNewPatient_Click;
             // 
+            // lblTitle
+            // 
+            lblTitle.AutoSize = true;
+            lblTitle.Location = new Point(426, 22);
+            lblTitle.Name = "lblTitle";
+            lblTitle.Size = new Size(55, 23);
+            lblTitle.TabIndex = 5;
+            lblTitle.Text = "label1";
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(9F, 23F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(30, 30, 30);
             ClientSize = new Size(900, 518);
+            Controls.Add(lblTitle);
             Controls.Add(btnNewPatient);
             Controls.Add(btnAttach);
             Controls.Add(btnSend);
@@ -129,5 +140,6 @@
         private Button btnSend;
         private Button btnAttach;
         private Button btnNewPatient;
+        private Label lblTitle;
     }
 }
