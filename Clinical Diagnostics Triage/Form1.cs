@@ -1,3 +1,4 @@
+using ReaLTaiizor.Controls;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,6 +14,11 @@ namespace Clinical_Diagnostics_Triage
 {
     public partial class Form1 : Form
     {
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int wMsg, int wParam, ref Point lParam);
+        private const int EM_GETSCROLLPOS = 0x04DD;
+        private const int EM_SETSCROLLPOS = 0x04DE;
+
         [System.Runtime.InteropServices.DllImport("Gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
         private static extern IntPtr CreateRoundRectRgn
         (
@@ -303,9 +309,29 @@ namespace Clinical_Diagnostics_Triage
 
         private void rtbChatHistory_TextChanged(object sender, EventArgs e)
         {
-            // Auto-scroll to bottom as text is added
+            // 1. Force the chat box to scroll down to the newest message
             rtbChatHistory.SelectionStart = rtbChatHistory.Text.Length;
             rtbChatHistory.ScrollToCaret();
+
+            // 2. Calculate exactly how tall the entire chat history is right now
+            int totalLines = rtbChatHistory.GetLineFromCharIndex(rtbChatHistory.TextLength) + 1;
+            int totalHeight = totalLines * rtbChatHistory.Font.Height;
+
+            // 3. Update the custom scroll bar's maximum size
+            if (totalHeight > rtbChatHistory.Height)
+            {
+                // Add a little extra padding so it doesn't get stuck
+                poisonVScrollBar1.Maximum = totalHeight + 50;
+
+                // Grab the new scroll position and snap the bar to the bottom
+                Point currentScroll = new Point();
+                SendMessage(rtbChatHistory.Handle, EM_GETSCROLLPOS, 0, ref currentScroll);
+
+                if (currentScroll.Y <= poisonVScrollBar1.Maximum)
+                {
+                    poisonVScrollBar1.Value = currentScroll.Y;
+                }
+            }
         }
 
         // ==========================================
@@ -357,6 +383,28 @@ namespace Clinical_Diagnostics_Triage
             // NOTE: WinForms text boxes must have BorderStyle set to None for this to look good!
             txtInput.BorderStyle = BorderStyle.None;
             txtInput.Region = System.Drawing.Region.FromHrgn(CreateRoundRectRgn(0, 0, txtInput.Width, txtInput.Height, 10, 10));
+        }
+
+        private void poisonVScrollBar1_Scroll(object sender, ScrollEventArgs e)
+        {
+            // Get the exact pixel value of where the custom scroll bar was dragged
+            Point scrollTarget = new Point(0, poisonVScrollBar1.Value);
+
+            // Force the text box to move to that exact pixel
+            SendMessage(rtbChatHistory.Handle, EM_SETSCROLLPOS, 0, ref scrollTarget);
+        }
+
+        private void rtbChatHistory_VScroll(object sender, EventArgs e)
+        {
+            // Ask Windows exactly where the text box is currently scrolled to
+            Point currentScroll = new Point();
+            SendMessage(rtbChatHistory.Handle, EM_GETSCROLLPOS, 0, ref currentScroll);
+
+            // Safely update the custom scroll bar to match that exact position
+            if (currentScroll.Y >= poisonVScrollBar1.Minimum && currentScroll.Y <= poisonVScrollBar1.Maximum)
+            {
+                poisonVScrollBar1.Value = currentScroll.Y;
+            }
         }
     }
 }

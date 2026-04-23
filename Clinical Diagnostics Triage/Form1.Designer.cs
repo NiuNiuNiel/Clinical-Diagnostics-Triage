@@ -34,6 +34,7 @@
             btnAttach = new Button();
             btnNewPatient = new Button();
             lblTitle = new Label();
+            poisonVScrollBar1 = new ReaLTaiizor.Controls.PoisonScrollBar();
             SuspendLayout();
             // 
             // rtbChatHistory
@@ -43,9 +44,11 @@
             rtbChatHistory.Location = new Point(51, 59);
             rtbChatHistory.Name = "rtbChatHistory";
             rtbChatHistory.ReadOnly = true;
+            rtbChatHistory.ScrollBars = RichTextBoxScrollBars.Horizontal;
             rtbChatHistory.Size = new Size(806, 339);
             rtbChatHistory.TabIndex = 0;
             rtbChatHistory.Text = "";
+            rtbChatHistory.VScroll += rtbChatHistory_VScroll;
             rtbChatHistory.TextChanged += rtbChatHistory_TextChanged;
             // 
             // txtInput
@@ -112,12 +115,29 @@
             lblTitle.TabIndex = 5;
             lblTitle.Text = "label1";
             // 
+            // poisonVScrollBar1
+            // 
+            poisonVScrollBar1.LargeChange = 10;
+            poisonVScrollBar1.Location = new Point(867, 94);
+            poisonVScrollBar1.Maximum = 100;
+            poisonVScrollBar1.Minimum = 0;
+            poisonVScrollBar1.MouseWheelBarPartitions = 10;
+            poisonVScrollBar1.Name = "poisonVScrollBar1";
+            poisonVScrollBar1.Orientation = ReaLTaiizor.Enum.Poison.ScrollOrientationType.Vertical;
+            poisonVScrollBar1.ScrollbarSize = 12;
+            poisonVScrollBar1.Size = new Size(12, 250);
+            poisonVScrollBar1.TabIndex = 6;
+            poisonVScrollBar1.Text = "poisonScrollBar1";
+            poisonVScrollBar1.UseSelectable = true;
+            poisonVScrollBar1.Scroll += poisonVScrollBar1_Scroll;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(9F, 23F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(30, 30, 30);
             ClientSize = new Size(900, 518);
+            Controls.Add(poisonVScrollBar1);
             Controls.Add(lblTitle);
             Controls.Add(btnNewPatient);
             Controls.Add(btnAttach);
@@ -141,5 +161,6 @@
         private Button btnAttach;
         private Button btnNewPatient;
         private Label lblTitle;
+        private ReaLTaiizor.Controls.PoisonScrollBar poisonVScrollBar1;
     }
 }
