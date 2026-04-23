@@ -6,8 +6,31 @@ import zai
 from PIL import Image
 import requests
 import json
+from operator import itemgetter
+import time
+import datetime
+import os
+import PyPDF2
+import docx
 
 
+def activity_logger(ID, _type, details):
+    os.makedirs("Activity_Log", exist_ok=True)
+    
+    file_path = f"Activity_Log/{datetime.date.today()}.csv"
+    
+    line_count = 0
+    if os.path.exists(file_path):
+        with open(file_path, "r") as log_file:
+            line_count = len(log_file.readlines())
+            
+    activity_ID = f"{int(time.time())}_{line_count + 2}_{ID}"
+    
+    with open(file_path, "a+") as log_file:
+        log_file.write(f"{activity_ID}, {_type}, {details}\n")
+
+    if _type == "AI_Node_Execution":
+        return activity_ID
 
 def read_file(file_path, headers):
     file_type = file_path.split(".")[-1].lower()
@@ -23,9 +46,25 @@ def read_file(file_path, headers):
     elif file_type in ["png", "jpg", "jpeg"]:
         image = Image.open(file_path)
         return np.asarray(image)
-    elif file_type in ["doc", "docx", "txt", "pdf"]:
-        with open(file_path, "r") as f:
+    elif file_type == "txt":
+        with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
+    elif file_type == "pdf":
+        text = ""
+        with open(file_path, "rb") as f:
+            reader = PyPDF2.PdfReader(f)
+            for page in reader.pages:
+                extracted = page.extract_text()
+                if extracted:
+                    text += extracted + "\n"
+        return text
+        
+    elif file_type == "docx":
+        doc = docx.Document(file_path)
+        return "\n".join([para.text for para in doc.paragraphs])
+        
+    elif file_type == "doc":
+        raise ValueError("Legacy .doc files are not supported. Please use .docx or .pdf.")
     else:
         raise ValueError("Unsupported file type")
 
@@ -37,7 +76,7 @@ def modification_func(data, modification):
     elif modification == "drop_missing":
         return data.dropna()
     elif modification == None:
-        return
+        return data
     else:
         raise ValueError("Unsupported modification type")
 
@@ -52,15 +91,26 @@ def AI_node(model_name, modifications, file_path, headers):
 
     file_name = file_path.split("/")[-1]
 
+    result = {
+        "file_name": file_name,
+        "model_name": model_name,
+        "reference_ID": f"{model_name}_Result"
+        }
+
     if file_path.split(".")[-1].lower() in ["png", "jpg", "jpeg"]:
-        return
+        prediction = model.predict(file_data.reshape(1, file_data.shape[0], file_data.shape[1], file_data.shape[2]))[0]
+        result["result"] = {"Prediction":classes[model_name][np.argmax(prediction, axis=-1)], "Confident Score":f"{np.max(prediction, axis=-1)*100:.2f}%"}
+        return result
 
     if len(file_data) == 1:
         prediction = model.predict(file_data.to_numpy().reshape(1, -1, 1))[0]
-        return {file_name:{"Prediction":classes[model_name][np.argmax(prediction, axis=-1)], "Confident Score":f"{np.max(prediction, axis=-1)*100:.2f}%"}}
+        result["result"] = {"Prediction":classes[model_name][np.argmax(prediction, axis=-1)], "Confident Score":f"{np.max(prediction, axis=-1)*100:.2f}%"}
+        return result
 
     predictions = model.predict(file_data.values)
-    return {file_name:[{"Index":index, "Prediction":classes[model_name][np.argmax(prediction, axis=-1)], "Confident Score":f"{np.max(prediction, axis=-1)*100:.2f}%"} for index,prediction in enumerate(predictions)]}
+    result["result"] = [{"Index":index, "Prediction":classes[model_name][np.argmax(prediction, axis=-1)], "Confident Score":f"{np.max(prediction, axis=-1)*100:.2f}%"} for index,prediction in enumerate(predictions)]
+
+    return result
 
 
 
@@ -168,7 +218,7 @@ Each field is defined as follows:
         - None if no cleaning is needed.
     - For Image data (png,jpg,jpeg): Set to None (the backend automatically handles standard tensor reshaping)
 - "file_path": The path of the file being processed in this node.
-- "headers": An integer indicating the row number to be used as headers for this file, or null if there are no headers.
+- "headers": An integer indicating the row number to be used as headers for this file, or None if there are no headers.
 """
 
 try:
@@ -198,10 +248,12 @@ try:
             ],
             stream=False
         )
+
+    activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Call", details=f"Model choosing response: {model_choosing_response.choices[0].message.content}")
 except zai.ZAIError.TokenLimitError as e:
-    raise e("Token limit exceeded")
+    raise RuntimeError("Token limit exceeded") from e
 except Exception as e:
-    raise e("API call failed")
+    raise RuntimeError("API call failed") from e
 
 model_choosing = json.loads(model_choosing_response.choices[0].message.content)
 
@@ -211,11 +263,14 @@ if model_choosing["requires_model"]:
     print("Utilizing AI nodes...")
     AI_nodes_results = []
     for node in model_choosing["AI_nodes"]:
-        AI_nodes_results.append(AI_node(model_name=node["model_name"], modifications=node["modifications"], file_path=node["file_path"], headers=node["headers"]))
+        result = AI_node(model_name=node["model_name"], modifications=node["modifications"], file_path=node["file_path"], headers=node["headers"])
+        result["reference_ID"] = activity_logger(ID=result["reference_ID"], _type="AI_Node_Execution", details=f"Executed {node['model_name']} on {node['file_path']} with result: {result}")
+        AI_nodes_results.append(result)
+        
 
 
 # Notes and Predictions (if any) analysis
-print(f"Analysing Clinical Notes {f'together with AI Nodes Results' if model_choosing["requires_model"] else ''} ...")
+print(f"Analysing Clinical Notes {f'together with AI Nodes Results' if model_choosing['requires_model'] else ''} ...")
 
 analysis_context = f"""
 You are the final synthesis agent for a Clinical Diagnostics Triage Copilot.
@@ -235,7 +290,8 @@ Original Physician Notes: {user_prompt}
 """
 
 if model_choosing["requires_model"]:
-    analysis_context += f"\n\nAutomated AI Node Findings:\n{AI_nodes_results}"
+    node_summary = "\n".join([f"{n['file_name']}: {n['result']}" for n in AI_nodes_results])
+    analysis_context += f"\n\nAutomated AI Node Findings:\n{node_summary}"
 
 analysis_context += """
 \nBased on all provided information, you MUST output a final triage decision as a valid JSON object representing an Electronic Health Record (EHR) payload matching this exact schema:
@@ -280,14 +336,16 @@ try:
             ],
             stream=False
         )
+
+    activity_logger(ID="Final_Analysis", _type="Final_Analysis_API_Call", details=f"Final analysis response: {Analysis_response.choices[0].message.content}")
 except zai.ZAIError.TokenLimitError as e:
-    raise e("Token limit exceeded")
+    raise RuntimeError("Token limit exceeded") from e
 except Exception as e:
-    raise e("API call failed")
+    raise RuntimeError("API call failed") from e
 
 Analysis = json.loads(Analysis_response.choices[0].message.content)
 
-if model_choosing:
+if model_choosing["requires_model"]:
     Analysis["AI_nodes_results"] = AI_nodes_results
 
 print(json.dumps(Analysis))

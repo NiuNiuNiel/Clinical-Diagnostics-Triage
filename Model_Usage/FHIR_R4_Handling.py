@@ -39,10 +39,26 @@ pay_load = {
     }
 
 if not status:
-    investiagtions = []
+    items = []
 
-    for ai_node_result in upload_material.get("AI_node_results", []):
-        pass
-        investiagtions.append(investigations)
+    for ai_node_result in upload_material.get("AI_node_results"):
+        item = {
+          "reference": ai_node_result.get("reference_ID"),
+          "display": f"{ai_node_result.get("model_name")}: {ai_node_result.get("result")}"
+        }
+        items.append(item)
 
-    pay_load["investigation"] = investiagtions
+    pay_load["investigation"] = [
+            {
+                "code": {
+                    "text": "Automated AI Diagnostic Nodes"
+                },
+                "item": items
+            }
+        ]
+
+def mock_push_to_fhir_server(payload):
+    print(json.dumpps(payload))
+
+
+mock_push_to_fhir_server(pay_load)
