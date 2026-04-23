@@ -243,6 +243,7 @@ analysis_context += """
     "triage_priority": "string",
     "clinical_summary": "string",
     "recommended_action": "string",
+    "triage_reason": "string",
     "flagged_for_human_review": boolean
 }
 
@@ -250,6 +251,7 @@ Each field is defined as follows:
 - "triage_priority": An integer range from 1 to 5, where 1 indicates the highest priority for immediate attention and 5 indicates the lowest priority for non-urgent cases.
 - "clinical_summary": A brief summary of the patient's condition, including key symptoms, relevant medical history, and any critical information that would assist healthcare professionals in understanding the patient's situation quickly and effectively.
 - "recommended_action": A clear and concise recommendation for the next steps that medical staff should take based on the analysis of the patient's condition and the AI findings. This could include actions such as "Immediate hospitalization", "Schedule follow-up appointment", "Order additional tests", or "Provide home care instructions".
+- "triage_reason": A clear explanation of the rationale behind the triage decision. This should synthesize the patient's reported symptoms with the automated AI node findings, explicitly stating *why* a specific priority was assigned (e.g., "The clinical notes indicate acute chest pain, and the Heartbeat_Abnormality_Model confirmed Ventricular Ectopic Beats with 98% confidence, necessitating immediate escalation.").
 - "flagged_for_human_review": A boolean value indicating whether the case should be flagged for human review due to ambiguous or contradictory AI findings.
 """
 
@@ -284,5 +286,8 @@ except Exception as e:
     raise e("API call failed")
 
 Analysis = json.loads(Analysis_response.choices[0].message.content)
+
+if model_choosing:
+    Analysis["AI_nodes_results"] = AI_nodes_results
 
 print(json.dumps(Analysis))
