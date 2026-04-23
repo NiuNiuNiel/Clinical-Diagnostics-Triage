@@ -296,7 +296,7 @@ if model_choosing["requires_model"]:
 analysis_context += """
 \nBased on all provided information, you MUST output a final triage decision as a valid JSON object representing an Electronic Health Record (EHR) payload matching this exact schema:
 {
-    "triage_priority": "string",
+    "triage_priority": integer,
     "clinical_summary": "string",
     "recommended_action": "string",
     "triage_reason": "string",

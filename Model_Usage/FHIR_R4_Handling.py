@@ -12,9 +12,9 @@ status = upload_material.get("flagged_for_human_review")
 
 pay_load = {
     "resourceType": "ClinicalImpression",
-    "status": "Incomplete" if status else "Completed",
+    "status": "in-progress" if status else "completed",
     "subject": {
-        "reference": patient_info.get("ID"),
+        "reference": f"Patient/{patient_info.get('ID')}",
         "display": patient_info.get("Name")
       },
     "description": upload_material.get("clinical_summary"),
@@ -38,13 +38,13 @@ pay_load = {
       ]
     }
 
-if not status:
+if upload_material.get("AI_nodes_results"):
     items = []
 
-    for ai_node_result in upload_material.get("AI_node_results"):
+    for ai_node_result in upload_material.get("AI_nodes_results"):
         item = {
           "reference": ai_node_result.get("reference_ID"),
-          "display": f"{ai_node_result.get("model_name")}: {ai_node_result.get("result")}"
+          "display": f"{ai_node_result.get('model_name')}: {ai_node_result.get('result')}"
         }
         items.append(item)
 
@@ -58,7 +58,7 @@ if not status:
         ]
 
 def mock_push_to_fhir_server(payload):
-    print(json.dumpps(payload))
+    print(json.dumps(payload))
 
 
 mock_push_to_fhir_server(pay_load)
