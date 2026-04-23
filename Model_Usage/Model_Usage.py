@@ -258,7 +258,7 @@ except zai.ZAIError.TokenLimitError as e:
 except Exception as e:
     raise RuntimeError("API call failed") from e
 
-model_choosing = json.loads(model_choosing_response.choices[0].message.content)
+model_choosing = json.loads(model_choosing_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip())
 
 print(model_choosing.get("response_summary"))
 
@@ -346,7 +346,7 @@ except zai.ZAIError.TokenLimitError as e:
 except Exception as e:
     raise RuntimeError("API call failed") from e
 
-Analysis = json.loads(Analysis_response.choices[0].message.content)
+Analysis = json.loads(Analysis_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip())
 
 if model_choosing["requires_model"]:
     Analysis["AI_nodes_results"] = AI_nodes_results
