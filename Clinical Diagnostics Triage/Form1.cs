@@ -13,6 +13,16 @@ namespace Clinical_Diagnostics_Triage
 {
     public partial class Form1 : Form
     {
+        [System.Runtime.InteropServices.DllImport("Gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
+        private static extern IntPtr CreateRoundRectRgn
+        (
+            int nLeftRect,
+            int nTopRect,
+            int nRightRect,
+            int nBottomRect,
+            int nWidthEllipse, // How curved the width is (Higher = rounder)
+            int nHeightEllipse // How curved the height is (Higher = rounder)
+        );
         private List<ChatMessage> currentSessionHistory = new List<ChatMessage>();
         private string attachedFilePath = string.Empty;
 
@@ -289,7 +299,50 @@ namespace Clinical_Diagnostics_Triage
 
         private void txtInput_TextChanged(object sender, EventArgs e)
         {
+            // 1. Define your size limits
+            int minHeight = 35;  // Height for 1 row of text
+            int maxHeight = 100; // Max height before it stops growing (approx 4-5 rows)
+            int padding = 10;    // Extra space so text isn't cramped
 
+            // 2. Calculate how many lines of text there are
+            int lines = txtInput.GetLineFromCharIndex(txtInput.TextLength) + 1;
+
+            // Calculate the needed height (approx 20 pixels per line depending on font size)
+            int neededHeight = (lines * 20) + padding;
+
+            // 3. Apply the dynamic height
+            if (neededHeight <= minHeight)
+            {
+                txtInput.Height = minHeight;
+                txtInput.ScrollBars = ScrollBars.None;
+            }
+            else if (neededHeight >= maxHeight)
+            {
+                txtInput.Height = maxHeight;
+                txtInput.ScrollBars = ScrollBars.Vertical; // Turn on scrolling when max limit is hit
+            }
+            else
+            {
+                txtInput.Height = neededHeight;
+                txtInput.ScrollBars = ScrollBars.None;
+            }
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            // The last two numbers (15, 15) control how round the corners are. 
+            // Increase them for pill-shaped buttons, decrease them for subtle curves.
+
+            // 1. Round the Send Button
+            btnSend.Region = System.Drawing.Region.FromHrgn(CreateRoundRectRgn(0, 0, btnSend.Width, btnSend.Height, 15, 15));
+
+            // 2. Round the Attach Button
+            btnAttach.Region = System.Drawing.Region.FromHrgn(CreateRoundRectRgn(0, 0, btnAttach.Width, btnAttach.Height, 15, 15));
+
+            // 3. Round the Text Box
+            // NOTE: WinForms text boxes must have BorderStyle set to None for this to look good!
+            txtInput.BorderStyle = BorderStyle.None;
+            txtInput.Region = System.Drawing.Region.FromHrgn(CreateRoundRectRgn(0, 0, txtInput.Width, txtInput.Height, 10, 10));
         }
     }
 }
