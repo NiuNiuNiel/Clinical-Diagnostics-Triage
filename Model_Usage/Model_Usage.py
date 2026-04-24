@@ -13,6 +13,7 @@ import os
 import PyPDF2
 import docx
 from pathlib import Path
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 
 def activity_logger(ID, _type, details):
@@ -85,11 +86,24 @@ def modification_func(data, modification):
         raise ValueError("Unsupported modification type")
 
 def AI_node(model_name, modifications, file_path, headers):
+
+    if model_name == "Clinical_Note_Summarization_Model":
+        tokenizer = AutoTokenizer.from_pretrained("Clinical_Note_Summarization_Model")
+        model = AutoModelForSeq2SeqLM.from_pretrained("Clinical_Note_Summarization_Model")
+
+        inputs = tokenizer(file_path, return_tensors="pt", max_length=512, truncation=True)
+
+        # Generate a summary
+        summary_ids = model.generate(inputs["input_ids"], max_length=200)
+        summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+
+        return summary
+
     model = load_model(model_name + ".keras")
 
     file_data = read_file(file_path, headers=headers)
 
-    if modifications != None:
+    if modifications is not None:
         for modification in modifications:
             file_data = modification_func(file_data, modification)
 
@@ -135,10 +149,10 @@ def upload_files(files, url = "https://api.z.ai/api/paas/v4/files"):
     
     return file_IDs
 
-def estimate_token(text, type):
-    if type == "string":
+def estimate_token(text, input_type):
+    if input_type == "string":
         return len(text) / 4
-    elif type in ["csv", "tsv", "json", "docx", "pdf"]:
+    elif input_type in ["csv", "tsv", "json", "docx", "pdf"]:
         return Path(text).stat().st_size / 4
     else:
         return 1445
@@ -181,7 +195,7 @@ classes = {"Heartbeat_Abnormality_Model" : ['Normal', 'Supraventricular Ectopic 
 
 if file_as_prompt != "None":
     if file_as_prompt.split(".")[-1].lower() in ["png", "jpg", "jpeg"]:
-        print("<Thinking Process>User attached image for clinical note, .</Thinking Process>")
+        print("<Thinking Process>User attached image for clinical note, converting via OCR.</Thinking Process>")
 
         file_as_prompt_IDs = upload_files([file_as_prompt])
 
@@ -274,7 +288,7 @@ file_tokens = sum([estimate_token(f, f.split(".")[-1].lower()) for f in files_at
 
 if estimate_token(model_choosing_context, "string") + estimate_token(user_prompt, "string") + file_tokens + 1000 > context_window:
     print("<Thinking Process>Prompt exceeds context window, utilizing Summarization Model.</Thinking Process>")
-    user_prompt = AI_node()
+    user_prompt = AI_node(file_path=user_prompt, model_name="Clinical_Note_Summarization_Model", modifications=None, headers=None)
 
 
 try:
