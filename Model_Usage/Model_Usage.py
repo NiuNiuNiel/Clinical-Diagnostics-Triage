@@ -16,9 +16,10 @@ from pathlib import Path
 
 
 def activity_logger(ID, _type, details):
-    os.makedirs("Activity_Log", exist_ok=True)
+    activity_log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Activity_Log')
+    os.makedirs(activity_log_dir, exist_ok=True)
     
-    file_path = f"Activity_Log/{datetime.date.today()}.csv"
+    file_path = f"{activity_log_dir}/{datetime.date.today()}.tsv"
     
     line_count = 0
     if os.path.exists(file_path):
@@ -28,7 +29,7 @@ def activity_logger(ID, _type, details):
     activity_ID = f"{int(time.time())}_{line_count + 2}_{ID}"
     
     with open(file_path, "a+") as log_file:
-        log_file.write(f"{activity_ID}, {_type}, {details}\n")
+        log_file.write(f"{activity_ID}\t{_type}\t{details}\n")
 
     if _type == "AI_Node_Execution":
         return activity_ID
@@ -65,8 +66,10 @@ def read_file(file_path, headers):
         return "\n".join([para.text for para in doc.paragraphs])
         
     elif file_type == "doc":
+        activity_logger(ID="File_Reading", _type="Unsupported_File_Type", details=f"Attempted to read unsupported file type: {file_type} for file {file_path}")
         raise ValueError("Legacy .doc files are not supported. Please use .docx or .pdf.")
     else:
+        activity_logger(ID="File_Reading", _type="Unsupported_File_Type", details=f"Attempted to read unsupported file type: {file_type} for file {file_path}")
         raise ValueError("Unsupported file type")
 
 def modification_func(data, modification):
@@ -76,7 +79,7 @@ def modification_func(data, modification):
         return data.fillna(0)
     elif modification == "drop_missing":
         return data.dropna()
-    elif modification == None:
+    elif modification is None:
         return data
     else:
         raise ValueError("Unsupported modification type")
@@ -119,14 +122,14 @@ def upload_files(files, url = "https://api.z.ai/api/paas/v4/files"):
         file_type = file.split(".")[-1].lower()
 
         with open(file, "rb") as f:
-            files = {
+            _files = {
                 "file": (file, f, mime_map.get(file_type))
             }
             data = {
                 "purpose": "agent"
             }
     
-            response = requests.post(url, headers=headers, files=files, data=data)
+            response = requests.post(url, headers=headers, files=_files, data=data)
 
         file_IDs.append(response.json()["id"])
     
@@ -199,9 +202,15 @@ if file_as_prompt != "None":
                 stream=False
             )
         except zai.ZAIError.TokenLimitError as e:
+            activity_logger(ID="OCR_Node", _type="OCR_Node_Token_Limit_Error", details=f"Token limit error during OCR conversion: {e}")
             raise RuntimeError(f"Token limit error: {e}")
         except Exception as e:
+            activity_logger(ID="OCR_Node", _type="OCR_Node_API_Error", details=f"API call failed during OCR conversion: {e}")
             raise RuntimeError(f"API call failed: {e}")
+
+        if converted_prompt.choices[0].message.content.strip() == "<<flagged_for_human_review>>":
+            activity_logger(ID="OCR_Node", _type="OCR_Node_Flagged_Human_Review", details="The attached clinical note image was flagged for human review due to poor quality.")
+            raise RuntimeError("The attached clinical note image is too messy to be converted into text, flagged for human review.")
 
         user_prompt += "\n" + converted_prompt.choices[0].message.content.strip()
     else:
@@ -296,10 +305,12 @@ try:
             stream=False
         )
 
-    activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Call", details=f"Model choosing response: {model_choosing_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip()}")
+    activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Call", details=f"Model choosing response: {model_choosing_response.choices[0].message.content.strip().removeprefix('```json').removesuffix('```').strip()}")
 except zai.ZAIError.TokenLimitError as e:
+    activity_logger(ID="Model_Choosing", _type="Model_Choosing_Token_Limit_Error", details=f"Token limit error during model choosing: {e}")
     raise RuntimeError("Token limit exceeded") from e
 except Exception as e:
+    activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Error", details=f"API call failed during model choosing: {e}")
     raise RuntimeError("API call failed") from e
 
 model_choosing = json.loads(model_choosing_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip())
@@ -351,7 +362,7 @@ analysis_context += """
 }
 
 Each field is defined as follows:
-- "triage_priority": An integer range from 1 to 5, where 1 indicates the highest priority for immediate attention and 4 indicates the lowest priority for non-urgent cases. If this case is flagged for human review due to ambiguous or contradictory AI findings, set this field to 5 by default.
+- "triage_priority": 1 = highest urgency, 4 = lowest non-urgent, 5 = reserved for human review flagging only.
 - "clinical_summary": A brief summary of the patient's condition, including key symptoms, relevant medical history, and any critical information that would assist healthcare professionals in understanding the patient's situation quickly and effectively.
 - "recommended_action": A clear and concise recommendation for the next steps that medical staff should take based on the analysis of the patient's condition and the AI findings. This could include actions such as "Immediate hospitalization", "Schedule follow-up appointment", "Order additional tests", or "Provide home care instructions".
 - "triage_reason": A clear explanation of the rationale behind the triage decision. This should synthesize the patient's reported symptoms with the automated AI node findings, explicitly stating *why* a specific priority was assigned (e.g., "The clinical notes indicate acute chest pain, and the Heartbeat_Abnormality_Model confirmed Ventricular Ectopic Beats with 98% confidence, necessitating immediate escalation.").
@@ -384,13 +395,15 @@ try:
             stream=False
         )
 
-    activity_logger(ID="Final_Analysis", _type="Final_Analysis_API_Call", details=f"Final analysis response: {Analysis_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip()}")
+    activity_logger(ID="Final_Analysis", _type="Final_Analysis_API_Call", details=f"Final analysis response: {Analysis_response.choices[0].message.content.strip().removeprefix('```json').removesuffix('```').strip()}")
 except zai.ZAIError.TokenLimitError as e:
+    activity_logger(ID="Final_Analysis", _type="Final_Analysis_Token_Limit_Error", details=f"Token limit error during final analysis: {e}")
     raise RuntimeError("Token limit exceeded") from e
 except Exception as e:
+    activity_logger(ID="Final_Analysis", _type="Final_Analysis_API_Error", details=f"API call failed during final analysis: {e}")
     raise RuntimeError("API call failed") from e
 
-Analysis = json.loads(Analysis_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip())
+Analysis = json.loads(Analysis_response.choices[0].message.content.strip().removeprefix('```json').removesuffix('```').strip())
 
 if model_choosing["requires_model"]:
     Analysis["AI_nodes_results"] = AI_nodes_results
