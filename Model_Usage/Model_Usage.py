@@ -260,10 +260,10 @@ except Exception as e:
 
 model_choosing = json.loads(model_choosing_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip())
 
-print(model_choosing.get("response_summary"))
+print("<Thinking Process>" + model_choosing.get("response_summary") + "</Thinking Process>")
 
 if model_choosing["requires_model"]:
-    print("Utilizing AI nodes...")
+    print("<Thinking Process>Utilizing AI nodes...</Thinking Process>")
     AI_nodes_results = []
     for node in model_choosing["AI_nodes"]:
         result = AI_node(model_name=node["model_name"], modifications=node["modifications"], file_path=node["file_path"], headers=node["headers"])
@@ -273,7 +273,7 @@ if model_choosing["requires_model"]:
 
 
 # Notes and Predictions (if any) analysis
-print(f"Analysing Clinical Notes {f'together with AI Nodes Results' if model_choosing['requires_model'] else ''} ...")
+print(f"<Thinking Process>Analysing Clinical Notes {f'together with AI Nodes Results' if model_choosing['requires_model'] else ''} ...</Thinking Process>")
 
 analysis_context = f"""
 You are the final synthesis agent for a Clinical Diagnostics Triage Copilot.
@@ -351,4 +351,4 @@ Analysis = json.loads(Analysis_response.choices[0].message.content.strip().remov
 if model_choosing["requires_model"]:
     Analysis["AI_nodes_results"] = AI_nodes_results
 
-print(json.dumps(Analysis))
+print("<Output>" + json.dumps(Analysis) + "</Output>")
