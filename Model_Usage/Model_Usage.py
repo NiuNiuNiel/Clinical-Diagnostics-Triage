@@ -18,7 +18,7 @@ from pathlib import Path
 def activity_logger(ID, _type, details):
     os.makedirs("Activity_Log", exist_ok=True)
     
-    file_path = f"Activity_Log/{datetime.date.today()}.csv"
+    file_path = f"Activity_Log/{datetime.date.today()}.tsv"
     
     line_count = 0
     if os.path.exists(file_path):
@@ -28,7 +28,7 @@ def activity_logger(ID, _type, details):
     activity_ID = f"{int(time.time())}_{line_count + 2}_{ID}"
     
     with open(file_path, "a+") as log_file:
-        log_file.write(f"{activity_ID}, {_type}, {details}\n")
+        log_file.write(f"{activity_ID}\t{_type}\t{details}\n")
 
     if _type == "AI_Node_Execution":
         return activity_ID
@@ -119,14 +119,14 @@ def upload_files(files, url = "https://api.z.ai/api/paas/v4/files"):
         file_type = file.split(".")[-1].lower()
 
         with open(file, "rb") as f:
-            files = {
+            _files = {
                 "file": (file, f, mime_map.get(file_type))
             }
             data = {
                 "purpose": "agent"
             }
     
-            response = requests.post(url, headers=headers, files=files, data=data)
+            response = requests.post(url, headers=headers, files=_files, data=data)
 
         file_IDs.append(response.json()["id"])
     
@@ -296,7 +296,7 @@ try:
             stream=False
         )
 
-    activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Call", details=f"Model choosing response: {model_choosing_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip()}")
+    activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Call", details=f"Model choosing response: {model_choosing_response.choices[0].message.content.strip().removeprefix('```json').removesuffix('```').strip()}")
 except zai.ZAIError.TokenLimitError as e:
     raise RuntimeError("Token limit exceeded") from e
 except Exception as e:
@@ -351,7 +351,7 @@ analysis_context += """
 }
 
 Each field is defined as follows:
-- "triage_priority": An integer range from 1 to 5, where 1 indicates the highest priority for immediate attention and 4 indicates the lowest priority for non-urgent cases. If this case is flagged for human review due to ambiguous or contradictory AI findings, set this field to 5 by default.
+- "triage_priority": 1 = highest urgency, 4 = lowest non-urgent, 5 = reserved for human review flagging only.
 - "clinical_summary": A brief summary of the patient's condition, including key symptoms, relevant medical history, and any critical information that would assist healthcare professionals in understanding the patient's situation quickly and effectively.
 - "recommended_action": A clear and concise recommendation for the next steps that medical staff should take based on the analysis of the patient's condition and the AI findings. This could include actions such as "Immediate hospitalization", "Schedule follow-up appointment", "Order additional tests", or "Provide home care instructions".
 - "triage_reason": A clear explanation of the rationale behind the triage decision. This should synthesize the patient's reported symptoms with the automated AI node findings, explicitly stating *why* a specific priority was assigned (e.g., "The clinical notes indicate acute chest pain, and the Heartbeat_Abnormality_Model confirmed Ventricular Ectopic Beats with 98% confidence, necessitating immediate escalation.").
@@ -390,7 +390,7 @@ except zai.ZAIError.TokenLimitError as e:
 except Exception as e:
     raise RuntimeError("API call failed") from e
 
-Analysis = json.loads(Analysis_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip())
+Analysis = json.loads(Analysis_response.choices[0].message.content.strip().removeprefix('```json').removesuffix('```').strip())
 
 if model_choosing["requires_model"]:
     Analysis["AI_nodes_results"] = AI_nodes_results
