@@ -26,7 +26,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models\" />
-    <Folder Include="Activity_Log\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="api_key.txt" />

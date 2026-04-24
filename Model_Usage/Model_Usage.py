@@ -16,9 +16,10 @@ from pathlib import Path
 
 
 def activity_logger(ID, _type, details):
-    os.makedirs("Activity_Log", exist_ok=True)
+    activity_log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Activity_Log')
+    os.makedirs(activity_log_dir, exist_ok=True)
     
-    file_path = f"Activity_Log/{datetime.date.today()}.tsv"
+    file_path = f"{activity_log_dir}/{datetime.date.today()}.tsv"
     
     line_count = 0
     if os.path.exists(file_path):
@@ -65,8 +66,10 @@ def read_file(file_path, headers):
         return "\n".join([para.text for para in doc.paragraphs])
         
     elif file_type == "doc":
+        activity_logger(ID="File_Reading", _type="Unsupported_File_Type", details=f"Attempted to read unsupported file type: {file_type} for file {file_path}")
         raise ValueError("Legacy .doc files are not supported. Please use .docx or .pdf.")
     else:
+        activity_logger(ID="File_Reading", _type="Unsupported_File_Type", details=f"Attempted to read unsupported file type: {file_type} for file {file_path}")
         raise ValueError("Unsupported file type")
 
 def modification_func(data, modification):
@@ -76,7 +79,7 @@ def modification_func(data, modification):
         return data.fillna(0)
     elif modification == "drop_missing":
         return data.dropna()
-    elif modification == None:
+    elif modification is None:
         return data
     else:
         raise ValueError("Unsupported modification type")
@@ -199,9 +202,15 @@ if file_as_prompt != "None":
                 stream=False
             )
         except zai.ZAIError.TokenLimitError as e:
+            activity_logger(ID="OCR_Node", _type="OCR_Node_Token_Limit_Error", details=f"Token limit error during OCR conversion: {e}")
             raise RuntimeError(f"Token limit error: {e}")
         except Exception as e:
+            activity_logger(ID="OCR_Node", _type="OCR_Node_API_Error", details=f"API call failed during OCR conversion: {e}")
             raise RuntimeError(f"API call failed: {e}")
+
+        if converted_prompt.choices[0].message.content.strip() == "<<flagged_for_human_review>>":
+            activity_logger(ID="OCR_Node", _type="OCR_Node_Flagged_Human_Review", details="The attached clinical note image was flagged for human review due to poor quality.")
+            raise RuntimeError("The attached clinical note image is too messy to be converted into text, flagged for human review.")
 
         user_prompt += "\n" + converted_prompt.choices[0].message.content.strip()
     else:
@@ -298,8 +307,10 @@ try:
 
     activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Call", details=f"Model choosing response: {model_choosing_response.choices[0].message.content.strip().removeprefix('```json').removesuffix('```').strip()}")
 except zai.ZAIError.TokenLimitError as e:
+    activity_logger(ID="Model_Choosing", _type="Model_Choosing_Token_Limit_Error", details=f"Token limit error during model choosing: {e}")
     raise RuntimeError("Token limit exceeded") from e
 except Exception as e:
+    activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Error", details=f"API call failed during model choosing: {e}")
     raise RuntimeError("API call failed") from e
 
 model_choosing = json.loads(model_choosing_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip())
@@ -384,10 +395,12 @@ try:
             stream=False
         )
 
-    activity_logger(ID="Final_Analysis", _type="Final_Analysis_API_Call", details=f"Final analysis response: {Analysis_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip()}")
+    activity_logger(ID="Final_Analysis", _type="Final_Analysis_API_Call", details=f"Final analysis response: {Analysis_response.choices[0].message.content.strip().removeprefix('```json').removesuffix('```').strip()}")
 except zai.ZAIError.TokenLimitError as e:
+    activity_logger(ID="Final_Analysis", _type="Final_Analysis_Token_Limit_Error", details=f"Token limit error during final analysis: {e}")
     raise RuntimeError("Token limit exceeded") from e
 except Exception as e:
+    activity_logger(ID="Final_Analysis", _type="Final_Analysis_API_Error", details=f"API call failed during final analysis: {e}")
     raise RuntimeError("API call failed") from e
 
 Analysis = json.loads(Analysis_response.choices[0].message.content.strip().removeprefix('```json').removesuffix('```').strip())
