@@ -12,6 +12,7 @@ import datetime
 import os
 import PyPDF2
 import docx
+from pathlib import Path
 
 
 def activity_logger(ID, _type, details):
@@ -112,19 +113,39 @@ def AI_node(model_name, modifications, file_path, headers):
 
     return result
 
+def upload_files(files, url = "https://api.z.ai/api/paas/v4/files"):
+    file_IDs = []
+    for file in files:
+        file_type = file.split(".")[-1].lower()
 
+        with open(file, "rb") as f:
+            files = {
+                "file": (file, f, mime_map.get(file_type))
+            }
+            data = {
+                "purpose": "agent"
+            }
+    
+            response = requests.post(url, headers=headers, files=files, data=data)
+
+        file_IDs.append(response.json()["id"])
+    
+    return file_IDs
+
+def estimate_token(text, type):
+    if type == "string":
+        return len(text) / 4
+    elif type in ["csv", "tsv", "json", "docx", "pdf"]:
+        return Path(text).stat().st_size / 4
+    else:
+        return 1445
+
+context_window = 200000
 
 user_prompt = sys.argv[1]
-
 file_as_prompt = sys.argv[2]
-
-if file_as_prompt != "None":
-    user_prompt += "\n" + read_file(file_as_prompt, headers=None)
-
-
 files_attached = sys.argv[3:]
 
-url = "https://api.z.ai/api/paas/v4/files"
 mime_map = {
   "png": "image/png",
   "jpeg": "image/jpeg",
@@ -144,23 +165,7 @@ with open("API_key.txt", "r") as f:
 
 headers = {"Authorization": f"Bearer {API_key}"}
 
-file_IDs = []
-
-if files_attached[0] != "None":
-    for file in files_attached:
-        file_type = file.split(".")[-1].lower()
-
-        with open(file, "rb") as f:
-            files = {
-                "file": (file, f, mime_map.get(file_type))
-            }
-            data = {
-                "purpose": "agent"
-            }
-    
-            response = requests.post(url, headers=headers, files=files, data=data)
-
-        file_IDs.append(response.json()["id"])
+file_IDs = upload_files(files_attached) if files_attached[0] != "None" else []
 
 GLM_model = zai.ZaiClient(
     api_key=API_key,
@@ -170,6 +175,38 @@ GLM_model = zai.ZaiClient(
 classes = {"Heartbeat_Abnormality_Model" : ['Normal', 'Supraventricular Ectopic Beats', 'Ventricular Ectopic Beats', 'Fusion Beats', 'Unknown'],
            "Chest_XRay_Vision_Model" : ['Normal', 'Pneumonia'],
            }
+
+if file_as_prompt != "None":
+    if file_as_prompt.split(".")[-1].lower() in ["png", "jpg", "jpeg"]:
+        print("<Thinking Process>User attached image for clinical note, .</Thinking Process>")
+
+        file_as_prompt_IDs = upload_files([file_as_prompt])
+
+        try:
+            converted_prompt = GLM_model.chat.completions.create(
+                model="ilmu-glm-5.1",
+                messages=[
+                    {"role": "system", "content": "You are an OCR model that reads attached hand written clinical note images and return the exact information in one paragraph text without any interpretation. If the note is too messy and can't be converted into a text reply '<<flagged_for_human_review>>'"},
+                ],
+                tools=[
+                    {
+                        "type": "retrieval",
+                        "retrieval": {
+                            "file_ids": file_as_prompt_IDs 
+                        }
+                    }
+                ],
+                stream=False
+            )
+        except zai.ZAIError.TokenLimitError as e:
+            raise RuntimeError(f"Token limit error: {e}")
+        except Exception as e:
+            raise RuntimeError(f"API call failed: {e}")
+
+        user_prompt += "\n" + converted_prompt.choices[0].message.content.strip()
+    else:
+        user_prompt += "\n" + read_file(file_as_prompt, headers=None)
+
 
 
 # Model Choosing
@@ -223,6 +260,13 @@ Each field is defined as follows:
 - "file_path": The path of the file being processed in this node.
 - "headers": An integer indicating the row number to be used as headers for this file, or None if there are no headers.
 """
+
+file_tokens = sum([estimate_token(f, f.split(".")[-1].lower()) for f in files_attached]) if files_attached[0] != "None" else 0
+
+if estimate_token(model_choosing_context, "string") + estimate_token(user_prompt, "string") + file_tokens + 1000 > context_window:
+    print("<Thinking Process>Prompt exceeds context window, utilizing Summarization Model.</Thinking Process>")
+    user_prompt = AI_node()
+
 
 try:
     if len(file_IDs)  == 0:
@@ -307,7 +351,7 @@ analysis_context += """
 }
 
 Each field is defined as follows:
-- "triage_priority": An integer range from 1 to 5, where 1 indicates the highest priority for immediate attention and 5 indicates the lowest priority for non-urgent cases.
+- "triage_priority": An integer range from 1 to 5, where 1 indicates the highest priority for immediate attention and 4 indicates the lowest priority for non-urgent cases. If this case is flagged for human review due to ambiguous or contradictory AI findings, set this field to 5 by default.
 - "clinical_summary": A brief summary of the patient's condition, including key symptoms, relevant medical history, and any critical information that would assist healthcare professionals in understanding the patient's situation quickly and effectively.
 - "recommended_action": A clear and concise recommendation for the next steps that medical staff should take based on the analysis of the patient's condition and the AI findings. This could include actions such as "Immediate hospitalization", "Schedule follow-up appointment", "Order additional tests", or "Provide home care instructions".
 - "triage_reason": A clear explanation of the rationale behind the triage decision. This should synthesize the patient's reported symptoms with the automated AI node findings, explicitly stating *why* a specific priority was assigned (e.g., "The clinical notes indicate acute chest pain, and the Heartbeat_Abnormality_Model confirmed Ventricular Ectopic Beats with 98% confidence, necessitating immediate escalation.").
