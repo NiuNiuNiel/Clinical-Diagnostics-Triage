@@ -21,7 +21,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="FHIR_R4_Handling.py" />
+    <None Include="FHIR_R4_Handling.py" />
     <None Include="Model_Usage.py" />
   </ItemGroup>
   <ItemGroup>

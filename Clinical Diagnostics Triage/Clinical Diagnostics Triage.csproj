@@ -20,4 +20,11 @@
 		</None>
 	</ItemGroup>
 
+	<ItemGroup>
+		<None Include="..\Model_Usage\FHIR_R4_Handling.py">
+			<Link>FHIR_R4_Handling.py</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
 </Project>

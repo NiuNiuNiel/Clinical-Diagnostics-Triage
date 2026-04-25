@@ -193,6 +193,74 @@ namespace Clinical_Diagnostics_Triage
             catch (TaskCanceledException) { }
         }
 
+        private async Task TriggerFHIRPushAsync(List<AiNodeResult> aiNodesResults)
+        {
+            try
+            {
+                rtbChatHistory.SelectionColor = Color.LightSkyBlue;
+                rtbChatHistory.AppendText("\n[System]: Initiating FHIR R4 payload push...\n");
+                rtbChatHistory.ScrollToCaret();
+
+                // 1. Serialize ONLY the AI Nodes Results as requested
+                string fhirJson = JsonSerializer.Serialize(aiNodesResults);
+
+                // 2. Save it to a temp file to bypass command line character limits
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                string tempFilePath = Path.Combine(baseDir, "fhir_payload.json");
+                await File.WriteAllTextAsync(tempFilePath, fhirJson);
+
+                // Target the FHIR_R4_Handling.py script
+                string scriptPath = Path.Combine(baseDir, "FHIR_R4_Handling.py");
+
+                if (!File.Exists(scriptPath))
+                {
+                    throw new FileNotFoundException($"Could not find FHIR script at: {scriptPath}");
+                }
+
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    FileName = "python",
+                    Arguments = $"-u \"{scriptPath}\" \"{tempFilePath}\"",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                    WorkingDirectory = baseDir
+                };
+
+                using (Process process = Process.Start(startInfo))
+                {
+                    if (process == null) throw new Exception("Failed to start the FHIR backend.");
+
+                    // Read output and errors
+                    string output = await process.StandardOutput.ReadToEndAsync();
+                    string errors = await process.StandardError.ReadToEndAsync();
+
+                    process.WaitForExit();
+
+                    // Print any Python Tracebacks/Errors
+                    if (!string.IsNullOrWhiteSpace(errors))
+                    {
+                        rtbChatHistory.SelectionColor = Color.Tomato;
+                        rtbChatHistory.AppendText($"\n[FHIR Script Error]:\n{errors}\n");
+                    }
+
+                    // Print the successful output from the Python script
+                    if (!string.IsNullOrWhiteSpace(output))
+                    {
+                        rtbChatHistory.SelectionColor = Color.MediumSpringGreen;
+                        rtbChatHistory.AppendText($"\n[FHIR Server]:\n{output}\n");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                rtbChatHistory.SelectionColor = Color.Tomato;
+                rtbChatHistory.AppendText($"\n[System Error during FHIR Push]: {ex.Message}\n");
+            }
+        }
+
+
         // ==========================================
         // UI EVENT HANDLERS
         // ==========================================
@@ -315,6 +383,21 @@ namespace Clinical_Diagnostics_Triage
                             rtbChatHistory.SelectionColor = Color.Tomato;
                             rtbChatHistory.AppendText("\n⚠️ HUMAN INTERVENTION REQUIRED ⚠️\n");
                             rtbChatHistory.AppendText("Manual physician review is strictly required due to flagged ambiguity.\n");
+                        }
+
+                        if (payload.AI_nodes_results != null && payload.AI_nodes_results.Count > 0)
+                        {
+                            DialogResult pushResult = MessageBox.Show(
+                                "Triage analysis complete.\n\nDo you want to push the AI diagnostic results to the server via FHIR R4 payload?",
+                                "Push FHIR Payload",
+                                MessageBoxButtons.YesNo,
+                                MessageBoxIcon.Question);
+
+                            if (pushResult == DialogResult.Yes)
+                            {
+                                // Await the FHIR script execution, passing only the AI_nodes_results
+                                await TriggerFHIRPushAsync(payload.AI_nodes_results);
+                            }
                         }
                     }
                 }

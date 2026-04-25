@@ -1,5 +1,9 @@
 import sys
 import json
+import os
+import datetime
+import time
+
 
 upload_material = json.loads(sys.argv[1])
 patient_info = json.loads(sys.argv[2])
@@ -62,3 +66,21 @@ def mock_push_to_fhir_server(payload):
 
 
 mock_push_to_fhir_server(pay_load)
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", "..", ".."))
+
+activity_log_dir = os.path.join(repo_root, 'Activity_Log')
+os.makedirs(activity_log_dir, exist_ok=True)
+    
+file_path = os.path.join(activity_log_dir, f"{datetime.date.today()}.tsv")
+    
+line_count = 0
+if os.path.exists(file_path):
+    with open(file_path, "r") as log_file:
+        line_count = len(log_file.readlines())
+            
+activity_ID = f"{int(time.time())}_{line_count + 2}_Mock_FHIR_R4_Pushing"
+    
+with open(file_path, "a+") as log_file:
+    log_file.write(f"{activity_ID}\tPushing Mock FHIR R4\t{json.dumps(pay_load)}\n")
