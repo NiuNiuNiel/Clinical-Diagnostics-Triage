@@ -32,7 +32,8 @@ def activity_logger(ID, _type, details):
     activity_ID = f"{int(time.time())}_{line_count + 2}_{ID}"
     
     with open(file_path, "a+") as log_file:
-        log_file.write(f"{activity_ID}\t{_type}\t{details.replace('\n',' ')}\n")
+        cleaned_details = details.replace("\t", "    ").replace("\n", " ")
+        log_file.write(f"{activity_ID}\t{_type}\t{cleaned_details}\n")
 
     if _type == "AI_Node_Execution":
         return activity_ID

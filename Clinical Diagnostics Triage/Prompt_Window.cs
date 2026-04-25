@@ -440,7 +440,7 @@ namespace Clinical_Diagnostics_Triage
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
                 // Strictly clinical notes
-                openFileDialog.Filter = "Clinical Notes|*.txt;*.docx;*.pdf";
+                openFileDialog.Filter = "Clinical Notes|*.txt;*.docx;*.pdf*.png;*.jpg;*.jpeg";
                 openFileDialog.Title = "Attach Clinical Note Document";
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)

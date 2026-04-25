@@ -116,7 +116,7 @@
             lblTitle.Name = "lblTitle";
             lblTitle.Size = new Size(219, 23);
             lblTitle.TabIndex = 5;
-            lblTitle.Text = "label1";
+            lblTitle.Text = "Clinical Triage Copilot";
             lblTitle.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // bmFile_attachBtn
@@ -138,7 +138,7 @@
             label1.AutoSize = true;
             label1.Location = new Point(51, 463);
             label1.Name = "label1";
-            label1.Size = new Size(111, 23);
+            label1.Size = new Size(88, 19);
             label1.TabIndex = 8;
             label1.Text = "Clinical Note:";
             // 
@@ -147,7 +147,7 @@
             label2.AutoSize = true;
             label2.Location = new Point(278, 463);
             label2.Name = "label2";
-            label2.Size = new Size(127, 23);
+            label2.Size = new Size(101, 19);
             label2.TabIndex = 9;
             label2.Text = "Biomedical File:";
             // 
@@ -182,7 +182,7 @@
             // 
             // Prompt_Window
             // 
-            AutoScaleDimensions = new SizeF(9F, 23F);
+            AutoScaleDimensions = new SizeF(8F, 19F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(30, 30, 30);
             ClientSize = new Size(900, 518);
