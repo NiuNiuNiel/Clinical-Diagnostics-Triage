@@ -28,4 +28,9 @@
 		</None>
 	</ItemGroup>
 
+	<ItemGroup>
+		<None Include="..\icon\icon.jpeg">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 </Project>

@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Prompt_Window));
             rtbChatHistory = new RichTextBox();
             txtInput = new TextBox();
             btnSend = new Button();
@@ -198,8 +199,9 @@
             Controls.Add(rtbChatHistory);
             Font = new Font("Segoe UI", 10.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
             ForeColor = Color.WhiteSmoke;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "Prompt_Window";
-            Text = "Form1";
+            Text = "Clinical Triage Copilot";
             Load += Prompt_Window_Load;
             Resize += Prompt_Window_Resize;
             ResumeLayout(false);
