@@ -9,15 +9,14 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using PdfSharp.Pdf;
+using PdfSharp.Drawing;
+using PdfSharp.Drawing.Layout; // Required for text formatting
 
 namespace Clinical_Diagnostics_Triage
 {
     public partial class Prompt_Window : Form
     {
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern IntPtr SendMessage(IntPtr hWnd, int wMsg, int wParam, ref Point lParam);
-        private const int EM_GETSCROLLPOS = 0x04DD;
-        private const int EM_SETSCROLLPOS = 0x04DE;
 
         [System.Runtime.InteropServices.DllImport("Gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
         private static extern IntPtr CreateRoundRectRgn
@@ -69,7 +68,7 @@ namespace Clinical_Diagnostics_Triage
                 }
 
                 // Construct the final Python command
-                string arguments = $"-u \"{scriptPath}\" \"{safePrompt}\" \"{safeNoteFile}\" {bmFilesArgs}";        
+                string arguments = $"-u \"{scriptPath}\" \"{safePrompt}\" \"{safeNoteFile}\" {bmFilesArgs}";
 
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
@@ -406,18 +405,27 @@ namespace Clinical_Diagnostics_Triage
                 }
                 catch (Exception ex)
                 {
-                    cts.Cancel();
                     rtbChatHistory.SelectionColor = Color.Tomato;
                     rtbChatHistory.AppendText($"\nSystem Error: {ex.Message}\n");
                 }
                 finally
                 {
-                    // 6. Restore UI
-                    btnSend.Text = originalButtonText;
+                    // 1. Tell the animation to stop
+                    cts.Cancel();
+
+                    // 2. THE FIX: Wait for the animation thread to completely die before moving on
+                    try
+                    {
+                        await animationTask;
+                    }
+                    catch { } // Ignore the cancellation error, we just want it to stop
+
+                    // 3. NOW it is safe to restore the UI
+                    btnSend.Text = "Send"; // Hardcode this to guarantee it resets
                     btnSend.Enabled = true;
                     txtInput.Enabled = true;
                     btnAttach_Note.Enabled = true;
-                    bmFile_attachBtn.Enabled = true; // Unlock the new button
+                    bmFile_attachBtn.Enabled = true;
                     txtInput.Clear();
 
                     // Clear both trackers
@@ -486,29 +494,9 @@ namespace Clinical_Diagnostics_Triage
 
         private void rtbChatHistory_TextChanged(object sender, EventArgs e)
         {
-            // 1. Force the chat box to scroll down to the newest message
+            // Force the chat box to scroll down to the newest message
             rtbChatHistory.SelectionStart = rtbChatHistory.Text.Length;
             rtbChatHistory.ScrollToCaret();
-
-            // 2. Calculate exactly how tall the entire chat history is right now
-            int totalLines = rtbChatHistory.GetLineFromCharIndex(rtbChatHistory.TextLength) + 1;
-            int totalHeight = totalLines * rtbChatHistory.Font.Height;
-
-            // 3. Update the custom scroll bar's maximum size
-            if (totalHeight > rtbChatHistory.Height)
-            {
-                // Add a little extra padding so it doesn't get stuck
-                poisonVScrollBar1.Maximum = totalHeight + 50;
-
-                // Grab the new scroll position and snap the bar to the bottom
-                Point currentScroll = new Point();
-                SendMessage(rtbChatHistory.Handle, EM_GETSCROLLPOS, 0, ref currentScroll);
-
-                if (currentScroll.Y <= poisonVScrollBar1.Maximum)
-                {
-                    poisonVScrollBar1.Value = currentScroll.Y;
-                }
-            }
         }
 
         // ==========================================
@@ -545,42 +533,137 @@ namespace Clinical_Diagnostics_Triage
             txtInput.ScrollToCaret();
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        private void Prompt_Window_Load(object sender, EventArgs e)
         {
             // The last two numbers (15, 15) control how round the corners are. 
-            // Increase them for pill-shaped buttons, decrease them for subtle curves.
-
-            // 1. Round the Send Button
             btnSend.Region = System.Drawing.Region.FromHrgn(CreateRoundRectRgn(0, 0, btnSend.Width, btnSend.Height, 15, 15));
-
-            // 2. Round the Attach Button
             btnAttach_Note.Region = System.Drawing.Region.FromHrgn(CreateRoundRectRgn(0, 0, btnAttach_Note.Width, btnAttach_Note.Height, 15, 15));
 
-            // 3. Round the Text Box
-            // NOTE: WinForms text boxes must have BorderStyle set to None for this to look good!
             txtInput.BorderStyle = BorderStyle.None;
             txtInput.Region = System.Drawing.Region.FromHrgn(CreateRoundRectRgn(0, 0, txtInput.Width, txtInput.Height, 10, 10));
         }
 
-        private void poisonVScrollBar1_Scroll(object sender, ScrollEventArgs e)
+        private void Prompt_Window_Resize(object sender, EventArgs e)
         {
-            // Get the exact pixel value of where the custom scroll bar was dragged
-            Point scrollTarget = new Point(0, poisonVScrollBar1.Value);
-
-            // Force the text box to move to that exact pixel
-            SendMessage(rtbChatHistory.Handle, EM_SETSCROLLPOS, 0, ref scrollTarget);
+            lblTitle.Left = (this.ClientSize.Width - lblTitle.Width) / 2;
         }
 
-        private void rtbChatHistory_VScroll(object sender, EventArgs e)
+        private void btnReviewLogs_Click(object sender, EventArgs e)
         {
-            // Ask Windows exactly where the text box is currently scrolled to
-            Point currentScroll = new Point();
-            SendMessage(rtbChatHistory.Handle, EM_GETSCROLLPOS, 0, ref currentScroll);
+            // Create an instance of your new form
+            Review_Activity_Log logForm = new Review_Activity_Log();
 
-            // Safely update the custom scroll bar to match that exact position
-            if (currentScroll.Y >= poisonVScrollBar1.Minimum && currentScroll.Y <= poisonVScrollBar1.Maximum)
+            // ShowDialog() freezes the main chat window until they close the log window.
+            // If you want them to be able to use both at the same time, use logForm.Show() instead!
+            logForm.ShowDialog();
+        }
+
+        // ==========================================
+        // PDF FONT RESOLVER
+        // ==========================================
+        public class WindowsSystemFontResolver : PdfSharp.Fonts.IFontResolver
+        {
+            public byte[] GetFont(string faceName)
             {
-                poisonVScrollBar1.Value = currentScroll.Y;
+                // Map the specific font styles to the actual Windows files
+                string fontPath = @"C:\Windows\Fonts\arial.ttf"; // Default to regular Arial
+
+                if (faceName.Contains("Bold")) fontPath = @"C:\Windows\Fonts\arialbd.ttf";
+                else if (faceName.Contains("Italic")) fontPath = @"C:\Windows\Fonts\ariali.ttf";
+
+                if (File.Exists(fontPath))
+                {
+                    return File.ReadAllBytes(fontPath);
+                }
+
+                throw new FileNotFoundException($"Could not find font at: {fontPath}");
+            }
+
+            public PdfSharp.Fonts.FontResolverInfo ResolveTypeface(string familyName, bool isBold, bool isItalic)
+            {
+                // If the PDF asks for Arial, route it to our files
+                if (familyName.Equals("Arial", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (isBold) return new PdfSharp.Fonts.FontResolverInfo("Arial#Bold");
+                    if (isItalic) return new PdfSharp.Fonts.FontResolverInfo("Arial#Italic");
+                    return new PdfSharp.Fonts.FontResolverInfo("Arial#Regular");
+                }
+
+                // Fallback to regular Arial for everything else
+                return new PdfSharp.Fonts.FontResolverInfo("Arial#Regular");
+            }
+        }
+
+        private void btnExportPDF_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(rtbChatHistory.Text))
+            {
+                MessageBox.Show("There is no chat history to export!", "Export Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (SaveFileDialog saveDialog = new SaveFileDialog())
+            {
+                saveDialog.Filter = "PDF Document|*.pdf";
+                saveDialog.Title = "Save Clinical Session as PDF";
+                saveDialog.FileName = $"Clinical_Triage_Session_{DateTime.Now:yyyyMMdd_HHmm}.pdf";
+
+                if (saveDialog.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        // Register the font resolver (if not already registered)
+                        if (PdfSharp.Fonts.GlobalFontSettings.FontResolver == null)
+                        {
+                            PdfSharp.Fonts.GlobalFontSettings.FontResolver = new WindowsSystemFontResolver();
+                        }
+
+                        // 1. Create a new PDF document
+                        PdfDocument document = new PdfDocument();
+                        document.Info.Title = "Clinical Diagnostics Triage - Session Export";
+
+                        // 2. Create an empty page
+                        PdfPage page = document.AddPage();
+
+                        // 3. Get an XGraphics object for drawing
+                        XGraphics gfx = XGraphics.FromPdfPage(page);
+
+                        // ==========================================
+                        // NEW: DRAW THE CLINIC ICON / LOGO
+                        // ==========================================
+                        string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.jpeg");
+                        int textStartingY = 40; // Default text height if no logo is found
+
+                        if (File.Exists(iconPath))
+                        {
+                            XImage logo = XImage.FromFile(iconPath);
+
+                            // Draw the image at (X: 40, Y: 40) and resize it to 60x60 pixels
+                            gfx.DrawImage(logo, 40, 40, 60, 60);
+
+                            // Push the text starting position down so it doesn't overlap the image!
+                            textStartingY = 120;
+                        }
+
+                        // 4. Set the font
+                        XFont font = new XFont("Arial", 11, XFontStyleEx.Regular);
+                        XTextFormatter tf = new XTextFormatter(gfx);
+
+                        // 5. Define the margins and draw the chat history text
+                        // Notice we are using 'textStartingY' instead of the hardcoded 40
+                        XRect rect = new XRect(40, textStartingY, page.Width - 80, page.Height - textStartingY - 40);
+                        tf.DrawString(rtbChatHistory.Text, font, XBrushes.Black, rect, XStringFormats.TopLeft);
+
+                        // 6. Save the document
+                        document.Save(saveDialog.FileName);
+
+                        MessageBox.Show("Session successfully exported to PDF!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to generate PDF: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
             }
         }
     }
