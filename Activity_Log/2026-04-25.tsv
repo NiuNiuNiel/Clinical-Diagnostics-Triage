@@ -50,3 +50,244 @@
     "triage_reason": "The provided notes state this is a mock test without any real clinical data to analyze. As there are no symptoms or AI findings to synthesize, the case is assigned priority 5 and flagged for human review to confirm it is a deliberate system test and not an erroneous or incomplete submission.",
     "flagged_for_human_review": true
 }
+1777099857_54_File_Upload	Upload_Error	Gemini Upload Failed for NORMAL2-IM-1236-0001.jpeg: <HttpError 400 when requesting https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta&key=sk-6f0474d1e4dcaf3d38ab983f747b8fcc1463d0827d1aaef5 returned "API key not valid. Please pass a valid API key.". Details: "[{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key not valid. Please pass a valid API key.'}]">
+1777099952_55_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "The user has provided a chest X-ray image and requested a mock model choosing. The Chest_XRay_Vision_Model will be used to analyze the image for potential pneumonia detection, treating the image as relevant to respiratory diagnostics.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "original_image.jpeg",
+            "headers": null
+        }
+    ]
+}
+1777100232_67_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "Performing a mock triage by selecting an appropriate AI model for the attached chest X-ray image to detect potential respiratory conditions.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "path/to/original_image.png",
+            "headers": null
+        }
+    ]
+}
+1777100415_79_Model_Choosing	Model_Choosing_API_Call	Response: {
+  "response_summary": "The user requested a mock triage and model choosing for the attached chest X-ray image. The Chest_XRay_Vision_Model will be used to analyze the image for potential respiratory issues.",
+  "requires_model": true,
+  "AI_nodes": [
+    {
+      "model_name": "Chest_XRay_Vision_Model",
+      "modifications": null,
+      "file_path": "NORMAL2-IM-1236-0001.jpeg",
+      "headers": null
+    }
+  ]
+}
+1777100583_91_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "Performing a mock triage by analyzing the attached chest X-ray image for potential pneumonia detection using the Chest_XRay_Vision_Model.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "NORMAL2-IM-1236-0001.jpeg",
+            "headers": null
+        }
+    ]
+}
+1777100814_103_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "Performing a mock triage by routing the attached chest X-ray image for analysis using the Chest_XRay_Vision_Model to detect pneumonia.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "NORMAL2-IM-1236-0001.jpeg",
+            "headers": null
+        }
+    ]
+}
+1777101048_115_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "Performing a mock triage for a fake patient, processing the attached chest X-ray image using the Chest_XRay_Vision_Model for potential pneumonia detection.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "NORMAL2-IM-1236-0001.jpeg",
+            "headers": null
+        }
+    ]
+}
+1777101049_127_Chest_XRay_Vision_Model_Result	AI_Node_Execution	Executed Chest_XRay_Vision_Model on C:\Users\User\Downloads\chest_x_ray\chest_xray\train\NORMAL\NORMAL2-IM-1236-0001.jpeg with result: {'file_name': 'C:\\Users\\User\\Downloads\\chest_x_ray\\chest_xray\\train\\NORMAL\\NORMAL2-IM-1236-0001.jpeg', 'model_name': 'Chest_XRay_Vision_Model', 'reference_ID': 'Chest_XRay_Vision_Model_Result', 'result': {'Prediction': 'Normal', 'Confident Score': '96.23%'}}
+1777101059_128_Final_Analysis	Final_Analysis_API_Call	Final response: {
+    "triage_priority": 5,
+    "clinical_summary": "This is a mock triage test for a fake patient as indicated by the physician's notes. No actual clinical symptoms or patient history were provided for correlation. The automated AI model analyzed the provided chest X-ray image (NORMAL2-IM-1236-0001.jpeg) and predicted 'Normal' with a high confidence score of 96.23%.",
+    "recommended_action": "Flagged for human review to acknowledge the mock nature of this request and the absence of real patient clinical data or symptoms for correlation. No specific medical action is recommended for a 'fake patient' in a simulated environment.",
+    "triage_reason": "The AI model provided a 'Normal' prediction with high confidence (96.23%) for the chest X-ray. However, the physician's notes explicitly state this is a 'mock test' for a 'fake patient', meaning there are no actual patient symptoms or clinical history available to align with the AI findings. Therefore, a full clinical triage decision based on symptom correlation cannot be made, necessitating flagging for human review to confirm and manage the simulated scenario. The priority is set to 5 as per the rule for human review flagging only.",
+    "flagged_for_human_review": true
+}
+1777101246_135_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "Performing a mock triage by analyzing the provided chest X-ray image using the Chest X-Ray Vision Model to detect potential pneumonia.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "NORMAL2-IM-1236-0001.jpeg",
+            "headers": null
+        }
+    ]
+}
+1777101247_147_Chest_XRay_Vision_Model_Result	AI_Node_Execution	Executed Chest_XRay_Vision_Model on C:\Users\User\Downloads\chest_x_ray\chest_xray\train\NORMAL\NORMAL2-IM-1236-0001.jpeg with result: {'file_name': 'C:\\Users\\User\\Downloads\\chest_x_ray\\chest_xray\\train\\NORMAL\\NORMAL2-IM-1236-0001.jpeg', 'model_name': 'Chest_XRay_Vision_Model', 'reference_ID': 'Chest_XRay_Vision_Model_Result', 'result': {'Prediction': 'Normal', 'Confident Score': '96.23%'}}
+1777101254_148_Final_Analysis	Final_Analysis_API_Call	Final response: {
+    "triage_priority": 4,
+    "clinical_summary": "This record pertains to a mock patient used for a test run. A chest X-ray image was analyzed by an AI diagnostic model, which concluded the findings were 'Normal' with a high confidence score of 96.23%. No actual patient symptoms or medical history were provided for this mock scenario.",
+    "recommended_action": "No immediate medical action required as this is a mock test with a normal AI finding. Document results for mock test completion.",
+    "triage_reason": "The AI diagnostic model identified the chest X-ray as 'Normal' with a strong confidence score of 96.23%. Physician notes explicitly state this is a 'mock test' with a 'fake patient', meaning there are no real symptoms to consider. Therefore, based on the highly confident normal AI finding and the context of a mock test, a low urgency triage priority is assigned.",
+    "flagged_for_human_review": false
+}
+1777101658_155_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "A mock triage is requested for a fake patient, involving a mock model selection based on the attached chest X-ray image. The Chest X-Ray Vision Model will be used to analyze the image.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "NORMAL2-IM-0233-0001.jpeg",
+            "headers": null
+        }
+    ]
+}
+1777101659_167_Chest_XRay_Vision_Model_Result	AI_Node_Execution	Executed Chest_XRay_Vision_Model on C:\Users\User\Downloads\chest_x_ray\chest_xray\test\NORMAL\NORMAL2-IM-0233-0001.jpeg with result: {'file_name': 'C:\\Users\\User\\Downloads\\chest_x_ray\\chest_xray\\test\\NORMAL\\NORMAL2-IM-0233-0001.jpeg', 'model_name': 'Chest_XRay_Vision_Model', 'reference_ID': 'Chest_XRay_Vision_Model_Result', 'result': {'Prediction': 'Pneumonia', 'Confident Score': '99.07%'}}
+1777101672_168_Final_Analysis	Final_Analysis_API_Call	Final response: {
+    "triage_priority": 5,
+    "clinical_summary": "Physician notes indicate this is a 'mock test' for a 'fake patient', therefore no actual clinical symptoms were provided. Automated AI model predicted 'Pneumonia' with a high confidence score of 99.07% from a chest X-ray image (identified as NORMAL2-IM-0233-0001.jpeg).",
+    "recommended_action": "Flag for human review. Assessment needed to clarify the nature of the 'mock test' in light of the high-confidence AI finding of 'Pneumonia' for an image whose filename implies a 'NORMAL' classification. Evaluate the mock scenario and potential implications for real data processing.",
+    "triage_reason": "The AI model detected 'Pneumonia' with 99.07% confidence. However, the physician's notes explicitly state this is a 'mock test' for a 'fake patient' and provide no clinical symptoms for correlation. This lack of clinical context makes the AI finding ambiguous for actual triage. Furthermore, the AI's prediction of 'Pneumonia' from an image file named 'NORMAL' (NORMAL2-IM-0233-0001.jpeg) presents a significant contradiction or misclassification within the mock dataset, necessitating human review to understand this discrepancy.",
+    "flagged_for_human_review": true
+}
+1777101897_175_Model_Choosing	Model_Choosing_API_Call	Response: {
+  "response_summary": "The user wants a mock triage and model selection for the attached chest X-ray image. The Chest_XRay_Vision_Model will be used to analyze the image for potential pneumonia detection.",
+  "requires_model": true,
+  "AI_nodes": [
+    {
+      "model_name": "Chest_XRay_Vision_Model",
+      "modifications": null,
+      "file_path": "NORMAL2-IM-0233-0001.jpeg",
+      "headers": null
+    }
+  ]
+}
+1777101898_187_Chest_XRay_Vision_Model_Result	AI_Node_Execution	Executed Chest_XRay_Vision_Model on C:\Users\User\Downloads\chest_x_ray\chest_xray\test\NORMAL\NORMAL2-IM-0233-0001.jpeg with result: {'file_name': 'C:\\Users\\User\\Downloads\\chest_x_ray\\chest_xray\\test\\NORMAL\\NORMAL2-IM-0233-0001.jpeg', 'model_name': 'Chest_XRay_Vision_Model', 'reference_ID': 'Chest_XRay_Vision_Model_Result', 'result': {'Prediction': 'Pneumonia', 'Confident Score': '99.07%'}}
+1777101910_188_Final_Analysis	Final_Analysis_API_Call	Final response: {
+    "triage_priority": 5,
+    "clinical_summary": "Mock test scenario for a fake patient. No actual patient symptoms or medical history were provided in the physician's notes. Automated AI model identified 'Pneumonia' from the attached chest X-ray image.",
+    "recommended_action": "Flag for immediate human review to clarify the clinical context, correlate the high-confidence AI finding of Pneumonia with the explicit 'mock test' nature of the physician's notes, and determine appropriate next steps if this were a real patient case.",
+    "triage_reason": "The automated AI diagnostic model detected 'Pneumonia' with a very high confidence score of 99.07% from the provided chest X-ray. However, the physician's original notes indicate this is a 'mock test' on a 'fake patient,' providing no clinical symptoms or history to correlate with the AI's significant finding. Due to the inability to align the AI's high-confidence abnormality detection with patient-reported symptoms or clinical context, the case is flagged for human review to reconcile this discrepancy within the mock scenario.",
+    "flagged_for_human_review": true
+}
+1777102226_195_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "The user is requesting a mock triage and model selection based on the attached chest X-ray image. The Chest_XRay_Vision_Model will be used to analyze the image.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "NORMAL2-IM-0233-0001.jpeg",
+            "headers": null
+        }
+    ]
+}
+1777102227_207_Chest_XRay_Vision_Model_Result	AI_Node_Execution	Executed Chest_XRay_Vision_Model on C:\Users\User\Downloads\chest_x_ray\chest_xray\test\NORMAL\NORMAL2-IM-0233-0001.jpeg with result: {'file_name': 'C:\\Users\\User\\Downloads\\chest_x_ray\\chest_xray\\test\\NORMAL\\NORMAL2-IM-0233-0001.jpeg', 'model_name': 'Chest_XRay_Vision_Model', 'reference_ID': 'Chest_XRay_Vision_Model_Result', 'result': {'Prediction': 'Normal', 'Confident Score': '99.07%'}}
+1777102233_208_Final_Analysis	Final_Analysis_API_Call	Final response: {
+    "triage_priority": 4,
+    "clinical_summary": "Mock patient scenario with no reported symptoms. Automated AI analysis of the chest X-ray image indicates a normal finding with high confidence.",
+    "recommended_action": "No immediate clinical action required based on mock data; scenario concluded as a simulated normal case.",
+    "triage_reason": "The physician's notes explicitly state this is a 'mock test' for a 'fake patient', with no actual symptoms provided. The automated AI model confidently predicted 'Normal' based on the provided chest X-ray image with a 99.07% confidence score. Given the simulated nature of the case and the normal AI findings, a low triage priority is assigned.",
+    "flagged_for_human_review": false
+}
+1777102400_215_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "Performing a mock triage by applying the Chest_XRay_Vision_Model to the provided chest X-ray image (person1_virus_6.jpeg) to detect the presence of pneumonia, as requested for a mock model choosing test.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "person1_virus_6.jpeg",
+            "headers": null
+        }
+    ]
+}
+1777102401_227_Chest_XRay_Vision_Model_Result	AI_Node_Execution	Executed Chest_XRay_Vision_Model on C:\Users\User\Downloads\chest_x_ray\chest_xray\test\PNEUMONIA\person1_virus_6.jpeg with result: {'file_name': 'C:\\Users\\User\\Downloads\\chest_x_ray\\chest_xray\\test\\PNEUMONIA\\person1_virus_6.jpeg', 'model_name': 'Chest_XRay_Vision_Model', 'reference_ID': 'Chest_XRay_Vision_Model_Result', 'result': {'Prediction': 'Normal', 'Confident Score': '99.91%'}}
+1777102411_228_Final_Analysis	Final_Analysis_API_Call	Final response: {
+    "triage_priority": 4,
+    "clinical_summary": "Mock patient chest X-ray analysis performed. The automated AI model reported normal findings for the chest X-ray with a high confidence score. No specific patient symptoms or clinical history were provided for correlation, as this is a simulated triage scenario.",
+    "recommended_action": "Given the AI's normal finding for the mock chest X-ray, no immediate clinical action is indicated based on these results. This case serves as a demonstration of the triage system in a simulated environment.",
+    "triage_reason": "The AI's Chest X-ray analysis model confidently predicted a 'Normal' finding with a 99.91% confidence score. As this is a mock test for a fake patient, and no clinical symptoms were provided in the physician's notes to contradict this finding, the AI result dictates a non-urgent triage priority.",
+    "flagged_for_human_review": false
+}
+1777102483_235_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "Performing a mock triage by analyzing the attached chest X-ray image for potential respiratory issues using the Chest X-Ray Vision Model to detect pneumonia.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "person9_bacteria_38.jpeg",
+            "headers": null
+        }
+    ]
+}
+1777102484_247_Chest_XRay_Vision_Model_Result	AI_Node_Execution	Executed Chest_XRay_Vision_Model on C:\Users\User\Downloads\chest_x_ray\chest_xray\train\PNEUMONIA\person9_bacteria_38.jpeg with result: {'file_name': 'C:\\Users\\User\\Downloads\\chest_x_ray\\chest_xray\\train\\PNEUMONIA\\person9_bacteria_38.jpeg', 'model_name': 'Chest_XRay_Vision_Model', 'reference_ID': 'Chest_XRay_Vision_Model_Result', 'result': {'Prediction': 'Normal', 'Confident Score': '97.80%'}}
+1777102493_248_Final_Analysis	Final_Analysis_API_Call	Final response: {
+    "triage_priority": 4,
+    "clinical_summary": "This case is a mock test for a fake patient, with no actual clinical symptoms or history provided. The automated AI model analyzed the provided chest X-ray image.",
+    "recommended_action": "No immediate clinical action is required based on the AI findings. The case served as a mock triage exercise.",
+    "triage_reason": "The automated AI node for the chest X-ray image predicted 'Normal' with a high confidence score of 97.80%. As this is a mock test for a fake patient, there are no reported patient symptoms or clinical history to contradict this finding. The AI prediction is clear and has a confidence level above 90%, indicating a non-urgent status with no need for escalation.",
+    "flagged_for_human_review": false
+}
+1777102675_255_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "The user has requested a mock triage and model selection for a fake patient based on an attached chest X-ray image. The Chest_XRay_Vision_Model will be applied to detect pneumonia.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "person9_bacteria_39.jpeg",
+            "headers": null
+        }
+    ]
+}
+1777102676_267_Chest_XRay_Vision_Model_Result	AI_Node_Execution	Executed Chest_XRay_Vision_Model on C:\Users\User\Downloads\chest_x_ray\chest_xray\train\PNEUMONIA\person9_bacteria_39.jpeg with result: {'file_name': 'C:\\Users\\User\\Downloads\\chest_x_ray\\chest_xray\\train\\PNEUMONIA\\person9_bacteria_39.jpeg', 'model_name': 'Chest_XRay_Vision_Model', 'reference_ID': 'Chest_XRay_Vision_Model_Result', 'result': {'Prediction': 'Pneumonia', 'Confident Score': '68.92%'}}
+1777102685_268_Final_Analysis	Final_Analysis_API_Call	Final response: {
+    "triage_priority": 5,
+    "clinical_summary": "This is a mock test scenario for a fake patient. No specific clinical symptoms or history were provided in the physician's notes. An automated AI model identified 'Pneumonia' from a chest X-ray.",
+    "recommended_action": "Flagged for human review due to AI confidence below threshold and absence of patient-reported symptoms. A human physician should clinically correlate the AI finding with patient's actual condition (if real) and order further diagnostic evaluation.",
+    "triage_reason": "The AI diagnostic model predicted 'Pneumonia' from the chest X-ray image but with a confidence score of 68.92%, which is below the 90% threshold required for automatic escalation. Furthermore, no patient-specific symptoms were provided in the physician's notes to correlate with the AI finding, necessitating human review as per triage rules.",
+    "flagged_for_human_review": true
+}
+1777102740_275_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "The user requested a mock triage and model selection for a fake patient, providing a chest X-ray image. The Chest_XRay_Vision_Model will be used to analyze the image for the presence of pneumonia.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "person88_virus_163.jpeg",
+            "headers": null
+        }
+    ]
+}
+1777102740_287_Chest_XRay_Vision_Model_Result	AI_Node_Execution	Executed Chest_XRay_Vision_Model on C:\Users\User\Downloads\chest_x_ray\chest_xray\train\PNEUMONIA\person88_virus_163.jpeg with result: {'file_name': 'C:\\Users\\User\\Downloads\\chest_x_ray\\chest_xray\\train\\PNEUMONIA\\person88_virus_163.jpeg', 'model_name': 'Chest_XRay_Vision_Model', 'reference_ID': 'Chest_XRay_Vision_Model_Result', 'result': {'Prediction': 'Pneumonia', 'Confident Score': '99.73%'}}
+1777102748_288_Final_Analysis	Final_Analysis_API_Call	Final response: {
+    "triage_priority": 5,
+    "clinical_summary": "Automated AI model detected 'Pneumonia' with a high confidence score of 99.73% based on the provided chest X-ray image. Physician's original notes indicate this is a 'mock test' for a 'fake patient', and no specific patient symptoms or clinical context were provided.",
+    "recommended_action": "Flag for human review to clarify the nature of the 'mock test' and input any relevant patient clinical data if this were a real scenario. If this is a purely technical validation, no further patient action is required.",
+    "triage_reason": "The AI diagnostic model identified 'Pneumonia' with a confidence score of 99.73%, which is above the 90% threshold for abnormality detection. However, the physician's notes explicitly state 'This run is a mock test, could you perform a mock triage on a fake patient.' As no patient symptoms or clinical history were provided to align with the AI's finding, the criteria for escalating priority (Rule 2: 'symptoms align') cannot be met. Due to the lack of clinical context and the explicit 'mock test' status, the record is flagged for human review (Rule 3 implications).",
+    "flagged_for_human_review": true
+}

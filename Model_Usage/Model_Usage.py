@@ -14,6 +14,7 @@ import PyPDF2
 import docx
 from pathlib import Path
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+import google.generativeai as genai
 
 
 
@@ -48,7 +49,9 @@ def read_file(file_path, headers):
     elif file_type == "json":
         return pd.read_json(file_path)
     elif file_type in ["png", "jpg", "jpeg"]:
-        image = Image.open(file_path)
+        image = Image.open(file_path).convert("RGB")
+        image = image.resize((224, 224))
+        
         return np.asarray(image)
     elif file_type == "txt":
         with open(file_path, "r", encoding="utf-8") as f:
@@ -119,8 +122,10 @@ def AI_node(model_name, modifications, file_path, headers):
         }
 
     if file_path.split(".")[-1].lower() in ["png", "jpg", "jpeg"]:
-        prediction = model.predict(file_data.reshape(1, file_data.shape[0], file_data.shape[1], file_data.shape[2]))[0]
-        result["result"] = {"Prediction":classes[model_name][np.argmax(prediction, axis=-1)], "Confident Score":f"{np.max(prediction, axis=-1)*100:.2f}%"}
+        tensor = file_data.reshape(1, file_data.shape[0], file_data.shape[1], file_data.shape[2])
+        
+        prediction = model.predict(tensor)[0]
+        result["result"] = {"Prediction": classes[model_name][np.argmax(prediction, axis=-1)], "Confident Score": f"{np.max(prediction, axis=-1)*100:.2f}%"}
         return result
 
     if len(file_data) == 1:
@@ -133,26 +138,19 @@ def AI_node(model_name, modifications, file_path, headers):
 
     return result
 
-# AFTER — use the ZaiClient SDK directly
-def upload_files(files, url="https://api.ilmu.ai/api/paas/v4/files"):
-    file_IDs = []
+def upload_files(files):
+    uploaded_file_objects = []
     for file in files:
-        file_type = file.split(".")[-1].lower()
-        with open(file, "rb") as f:
-            _files = {
-                "file": (os.path.basename(file), f, mime_map.get(file_type, "application/octet-stream"))
-            }
-            data = {"purpose": "retrieval"}
-            response = requests.post(url, headers=headers, files=_files, data=data)
-
-        if not response.ok:
-            error_msg = f"API Upload Failed (HTTP {response.status_code}): {response.text}"
+        try:
+            # The SDK handles uploading and storage automatically
+            uploaded_file = genai.upload_file(path=file)
+            uploaded_file_objects.append(uploaded_file)
+        except Exception as e:
+            error_msg = f"Gemini Upload Failed for {os.path.basename(file)}: {e}"
+            activity_logger(ID="File_Upload", _type="Upload_Error", details=error_msg)
             raise Exception(error_msg)
-
-        response_json = response.json()
-        file_IDs.append(response_json["id"])
-
-    return file_IDs
+            
+    return uploaded_file_objects
 
 def estimate_token(text, input_type):
     if input_type == "string":
@@ -193,14 +191,11 @@ with open(api_key_path, "r") as f:
 
 headers = {"Authorization": f"Bearer {API_key}"}
 
-GLM_model = zai.ZaiClient(
-    api_key=API_key,
-    base_url="https://api.ilmu.ai/v1"
-    )
+genai.configure(api_key=API_key)
 
-file_IDs = upload_files(files_attached) if files_attached[0] != "None" else []
+model_name_gemini = "gemini-2.5-flash"
 
-
+file_objects = upload_files(files_attached) if files_attached[0] != "None" else []
 
 classes = {"Heartbeat_Abnormality_Model" : ['Normal', 'Supraventricular Ectopic Beats', 'Ventricular Ectopic Beats', 'Fusion Beats', 'Unknown'],
            "Chest_XRay_Vision_Model" : ['Normal', 'Pneumonia'],
@@ -210,36 +205,28 @@ if file_as_prompt != "None":
     if file_as_prompt.split(".")[-1].lower() in ["png", "jpg", "jpeg"]:
         print("<Thinking Process>User attached image for clinical note, converting via OCR.</Thinking Process>")
 
-        file_as_prompt_IDs = upload_files([file_as_prompt])
+        file_as_prompt_objects = upload_files([file_as_prompt])
 
         try:
-            converted_prompt = GLM_model.chat.completions.create(
-                model="ilmu-glm-5.1",
-                messages=[
-                    {"role": "system", "content": "You are an OCR model that reads attached hand written clinical note images and return the exact information in one paragraph text without any interpretation. If the note is too messy and can't be converted into a text reply '<<flagged_for_human_review>>'"},
-                ],
-                tools=[
-                    {
-                        "type": "retrieval",
-                        "retrieval": {
-                            "file_ids": file_as_prompt_IDs 
-                        }
-                    }
-                ],
-                stream=False
-            )
-        except zai.ZAIError.TokenLimitError as e:
-            activity_logger(ID="OCR_Node", _type="OCR_Node_Token_Limit_Error", details=f"Token limit error during OCR conversion: {e}")
-            raise RuntimeError(f"Token limit error: {e}")
+            # We initialize a temporary model just for OCR
+            ocr_model = genai.GenerativeModel(model_name_gemini)
+            
+            ocr_prompt = "You are an OCR model that reads attached hand written clinical note images and return the exact information in one paragraph text without any interpretation. If the note is too messy and can't be converted into a text reply '<<flagged_for_human_review>>'"
+            
+            # Pass the prompt AND the file object directly in a list
+            converted_prompt = ocr_model.generate_content([ocr_prompt, file_as_prompt_objects[0]])
+            
+            ocr_text = converted_prompt.text.strip()
+            
         except Exception as e:
-            activity_logger(ID="OCR_Node", _type="OCR_Node_API_Error", details=f"API call failed during OCR conversion: {e}")
+            activity_logger(ID="OCR_Node", _type="OCR_Node_API_Error", details=f"API call failed: {e}")
             raise RuntimeError(f"API call failed: {e}")
 
         if converted_prompt.choices[0].message.content.strip() == "<<flagged_for_human_review>>":
             activity_logger(ID="OCR_Node", _type="OCR_Node_Flagged_Human_Review", details="The attached clinical note image was flagged for human review due to poor quality.")
             raise RuntimeError("The attached clinical note image is too messy to be converted into text, flagged for human review.")
 
-        user_prompt += "\n" + converted_prompt.choices[0].message.content.strip()
+        user_prompt += "\n" + ocr_text
     else:
         user_prompt += "\n" + read_file(file_as_prompt, headers=None)
 
@@ -305,51 +292,53 @@ if estimate_token(model_choosing_context, "string") + estimate_token(user_prompt
 
 
 try:
-    if len(file_IDs)  == 0:
-        model_choosing_response = GLM_model.chat.completions.create(
-            model="ilmu-glm-5.1",
-            messages=[
-                {"role": "system", "content": model_choosing_context},
-                {"role": "user", "content": f"User Prompt: {user_prompt}"}
-            ],
-            stream=False
-        )
-    else:
-        model_choosing_response = GLM_model.chat.completions.create(
-            model="ilmu-glm-5.1",
-            messages=[
-                {"role": "system", "content": model_choosing_context},
-                {"role": "user", "content": f"User Prompt: {user_prompt}"}
-            ],
-            tools=[
-                {
-                    "type": "retrieval",
-                    "retrieval": {
-                        "file_ids": file_IDs 
-                    }
-                }
-            ],
-            stream=False
-        )
+    # Initialize the model with the System Instruction and force JSON output
+    routing_model = genai.GenerativeModel(
+        model_name=model_name_gemini,
+        system_instruction=model_choosing_context,
+        generation_config=genai.GenerationConfig(response_mime_type="application/json")
+    )
+    
+    # Combine the text prompt and the uploaded file objects into one payload
+    prompt_payload = [f"User Prompt: {user_prompt}"]
+    if len(file_objects) > 0:
+        file_names_text = "Attached Files:\n"
+        for local_path in files_attached:
+            if local_path != "None":
+                file_names_text += f"- {os.path.basename(local_path)}\n"
+        
+        prompt_payload.append(file_names_text)
+        prompt_payload.extend(file_objects)
 
-    activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Call", details=f"Model choosing response: {model_choosing_response.choices[0].message.content.strip().removeprefix('```json').removesuffix('```').strip()}")
-except zai.ZAIError.TokenLimitError as e:
-    activity_logger(ID="Model_Choosing", _type="Model_Choosing_Token_Limit_Error", details=f"Token limit error during model choosing: {e}")
-    raise RuntimeError("Token limit exceeded") from e
+    model_choosing_response = routing_model.generate_content(prompt_payload)
+    
+    # No need to remove ```json markdown anymore!
+    raw_json_response = model_choosing_response.text 
+    
+    activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Call", details=f"Response: {raw_json_response}")
+    
 except Exception as e:
-    activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Error", details=f"API call failed during model choosing: {e}")
+    activity_logger(ID="Model_Choosing", _type="Model_Choosing_API_Error", details=f"API call failed: {e}")
     raise RuntimeError("API call failed") from e
 
-model_choosing = json.loads(model_choosing_response.choices[0].message.content.strip().removeprefix("```json").removesuffix("```").strip())
+model_choosing = json.loads(raw_json_response)
 
 print("<Thinking Process>" + model_choosing.get("response_summary") + "</Thinking Process>")
 
 if model_choosing["requires_model"]:
     print("<Thinking Process>Utilizing AI nodes...</Thinking Process>")
+    file_map = {os.path.basename(f): f for f in files_attached if f != "None"}
+    
     AI_nodes_results = []
     for node in model_choosing["AI_nodes"]:
-        result = AI_node(model_name=node["model_name"], modifications=node["modifications"], file_path=node["file_path"], headers=node["headers"])
-        result["reference_ID"] = activity_logger(ID=result["reference_ID"], _type="AI_Node_Execution", details=f"Executed {node['model_name']} on {node['file_path']} with result: {result}")
+        
+        llm_filename = os.path.basename(node["file_path"])
+        
+        actual_absolute_path = file_map.get(llm_filename, node["file_path"])
+        
+        result = AI_node(model_name=node["model_name"], modifications=node["modifications"], file_path=actual_absolute_path, headers=node["headers"])
+        
+        result["reference_ID"] = activity_logger(ID=result["reference_ID"], _type="AI_Node_Execution", details=f"Executed {node['model_name']} on {actual_absolute_path} with result: {result}")
         AI_nodes_results.append(result)
         
 
@@ -397,40 +386,29 @@ Each field is defined as follows:
 """
 
 try:
-    if len(file_IDs)  == 0:
-        Analysis_response = GLM_model.chat.completions.create(
-        model="ilmu-glm-5.1",
-            messages=[
-                {"role": "system", "content": analysis_context}
-            ],
-            stream=False
-        )
-    else:
-        Analysis_response = GLM_model.chat.completions.create(
-            model="ilmu-glm-5.1",
-            messages=[
-                {"role": "system", "content": analysis_context}
-            ],
-            tools=[
-                {
-                    "type": "retrieval",
-                    "retrieval": {
-                        "file_ids": file_IDs 
-                    }
-                }
-            ],
-            stream=False
-        )
+    # Initialize the analysis model, forcing JSON output
+    analysis_model = genai.GenerativeModel(
+        model_name=model_name_gemini,
+        system_instruction=analysis_context,
+        generation_config=genai.GenerationConfig(response_mime_type="application/json")
+    )
 
-    activity_logger(ID="Final_Analysis", _type="Final_Analysis_API_Call", details=f"Final analysis response: {Analysis_response.choices[0].message.content.strip().removeprefix('```json').removesuffix('```').strip()}")
-except zai.ZAIError.TokenLimitError as e:
-    activity_logger(ID="Final_Analysis", _type="Final_Analysis_Token_Limit_Error", details=f"Token limit error during final analysis: {e}")
-    raise RuntimeError("Token limit exceeded") from e
+    # Attach the context and files
+    analysis_payload = [f"Original Physician Notes: {user_prompt}"]
+    if len(file_objects) > 0:
+        analysis_payload.extend(file_objects)
+
+    Analysis_response = analysis_model.generate_content(analysis_payload)
+    
+    raw_analysis_json = Analysis_response.text
+
+    activity_logger(ID="Final_Analysis", _type="Final_Analysis_API_Call", details=f"Final response: {raw_analysis_json}")
+    
 except Exception as e:
-    activity_logger(ID="Final_Analysis", _type="Final_Analysis_API_Error", details=f"API call failed during final analysis: {e}")
+    activity_logger(ID="Final_Analysis", _type="Final_Analysis_API_Error", details=f"API call failed: {e}")
     raise RuntimeError("API call failed") from e
 
-Analysis = json.loads(Analysis_response.choices[0].message.content.strip().removeprefix('```json').removesuffix('```').strip())
+Analysis = json.loads(raw_analysis_json)
 
 if model_choosing["requires_model"]:
     Analysis["AI_nodes_results"] = AI_nodes_results

@@ -150,7 +150,6 @@ namespace Clinical_Diagnostics_Triage
                     {
                         try
                         {
-                            finalJsonString = finalJsonString.Replace("'", "\"").Replace("True", "true").Replace("False", "false").Replace("None", "null");
                             return JsonSerializer.Deserialize<TriagePayload>(finalJsonString);
                         }
                         catch (Exception ex)
@@ -225,7 +224,10 @@ namespace Clinical_Diagnostics_Triage
 
             // 2. Print User Input
             rtbChatHistory.SelectionColor = Color.LightSkyBlue;
-            rtbChatHistory.AppendText($"\nPhysician:\n{prompt}\n");
+            rtbChatHistory.AppendText($"\nPhysician: ");
+
+            rtbChatHistory.SelectionColor = Color.WhiteSmoke;
+            rtbChatHistory.AppendText($"{prompt}\n");
 
             if (!string.IsNullOrEmpty(noteFile))
             {
@@ -240,7 +242,7 @@ namespace Clinical_Diagnostics_Triage
             }
 
             // Prepare the Chat History for the thinking process
-            rtbChatHistory.SelectionColor = Color.WhiteSmoke;
+            rtbChatHistory.SelectionColor = Color.Silver; // Changed from DarkGray for dark mode visibility
             rtbChatHistory.AppendText("\n--------------------\nThinking...\n");
 
             // 3. Setup streaming and animation
@@ -251,10 +253,8 @@ namespace Clinical_Diagnostics_Triage
                 try
                 {
                     bool isFirstThinkingStep = true;
-
                     Action<string> updateChatRealTime = null;
 
-                    // 2. Now assign the logic to it
                     updateChatRealTime = (stepText) =>
                     {
                         if (rtbChatHistory.InvokeRequired)
@@ -263,14 +263,15 @@ namespace Clinical_Diagnostics_Triage
                             return;
                         }
 
-                        rtbChatHistory.SelectionColor = Color.WhiteSmoke;
+                        // Make the real-time streamed steps Silver instead of DarkGray
+                        rtbChatHistory.SelectionColor = Color.Silver;
 
-                        // Add the visual connector if it's not the first step
                         if (!isFirstThinkingStep)
                         {
                             rtbChatHistory.AppendText("     |\n");
                         }
 
+                        rtbChatHistory.SelectionColor = Color.WhiteSmoke;
                         rtbChatHistory.AppendText($"{stepText}\n");
                         rtbChatHistory.ScrollToCaret();
 
@@ -286,7 +287,7 @@ namespace Clinical_Diagnostics_Triage
                     // 5. Print Final Results
                     if (payload != null)
                     {
-                        rtbChatHistory.SelectionColor = Color.WhiteSmoke;
+                        rtbChatHistory.SelectionColor = Color.DarkGray;
                         rtbChatHistory.AppendText("--------------------\n");
 
                         rtbChatHistory.SelectionColor = Color.WhiteSmoke;
@@ -296,9 +297,16 @@ namespace Clinical_Diagnostics_Triage
                         rtbChatHistory.SelectionColor = payload.triage_priority == 1 ? Color.Tomato : Color.Gold;
                         rtbChatHistory.AppendText($"Priority: Level {payload.triage_priority}\n");
 
+                        // FIX: Explicitly set WhiteSmoke before the Summary
                         rtbChatHistory.SelectionColor = Color.WhiteSmoke;
                         rtbChatHistory.AppendText($"Summary: {payload.clinical_summary}\n");
+
+                        // FIX: Explicitly set WhiteSmoke before the Reason
+                        rtbChatHistory.SelectionColor = Color.WhiteSmoke;
                         rtbChatHistory.AppendText($"Reason: {payload.triage_reason}\n");
+
+                        // FIX: Explicitly set WhiteSmoke before the Action
+                        rtbChatHistory.SelectionColor = Color.WhiteSmoke;
                         rtbChatHistory.AppendText($"Action: {payload.recommended_action}\n");
 
                         // Human Intervention Warning
