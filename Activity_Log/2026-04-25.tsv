@@ -475,3 +475,29 @@ Please retry in 15.71913062s. [links {
     "flagged_for_human_review": false
 }
 1777112066_478_Mock_FHIR_R4_Pushing	Pushing Mock FHIR R4	{"resourceType": "ClinicalImpression", "status": "completed", "subject": {"reference": "Patient/MOCK-123", "display": "Jane Doe"}, "description": "Mock patient for a test run. Automated AI analysis of the provided chest X-ray image indicates a normal finding with high confidence (99.20%). No actual patient symptoms or clinical history were provided, aligning with the 'fake patient' context.", "summary": "The AI diagnostic model confidently identified the chest X-ray as 'Normal' with a 99.20% confidence score. As this is a mock test for a fake patient with no reported symptoms, there is no clinical information to contradict the AI's normal finding, resulting in a low-urgency classification.", "finding": [{"itemCodeableConcept": {"text": "No immediate clinical action required based on the normal AI findings for this mock test scenario. If this were a real patient, these findings would typically be correlated with the patient's symptoms for a comprehensive assessment."}}], "extension": [{"url": "http://example.org/fhir/StructureDefinition/triage-priority", "valueInteger": 4}, {"url": "http://example.org/fhir/StructureDefinition/flagged-for-review", "valueBoolean": false}], "investigation": [{"code": {"text": "Automated AI Diagnostic Nodes"}, "item": [{"reference": "1777112051_470_Chest_XRay_Vision_Model_Result", "display": "Chest_XRay_Vision_Model: {'Prediction': 'Normal', 'Confident Score': '99.20%'}"}]}]}
+1777117716_479_Model_Choosing	Model_Choosing_API_Call	Response: {
+  "response_summary": "Performing a mock triage by routing the attached chest X-ray image for pneumonia detection using the Chest_XRay_Vision_Model.",
+  "requires_model": true,
+  "AI_nodes": [
+    {
+      "model_name": "Chest_XRay_Vision_Model",
+      "modifications": null,
+      "file_path": "NORMAL2-IM-1277-0001-0001.jpeg",
+      "headers": null
+    }
+  ]
+}
+1777117716_491_Chest_XRay_Vision_Model_Result	AI_Node_Execution	Executed Chest_XRay_Vision_Model on C:\Users\User\Downloads\chest_x_ray\chest_xray\train\NORMAL\NORMAL2-IM-1277-0001-0001.jpeg with result: {'file_name': 'C:\\Users\\User\\Downloads\\chest_x_ray\\chest_xray\\train\\NORMAL\\NORMAL2-IM-1277-0001-0001.jpeg', 'model_name': 'Chest_XRay_Vision_Model', 'reference_ID': 'Chest_XRay_Vision_Model_Result', 'result': {'Prediction': 'Normal', 'Confident Score': '98.93%'}}
+1777117724_492_Final_Analysis	Final_Analysis_API_Call	Final response: {
+    "triage_priority": 4,
+    "clinical_summary": "This is a simulated triage for a fake patient, as explicitly stated in the physician's notes. There are no actual patient symptoms provided. Automated AI analysis of the chest X-ray image indicates a 'Normal' finding.",
+    "recommended_action": "No immediate clinical action is required as this is a mock test scenario for a fake patient. For a real patient with a similar normal finding and absence of symptoms, routine care would typically be recommended.",
+    "triage_reason": "The physician's notes clearly state that this is a 'mock test' for a 'fake patient', with no real symptoms or medical history provided. The automated AI model analyzed the provided chest X-ray image and confidently predicted a 'Normal' finding with a 98.93% confidence score. There is no indication of abnormality or urgency based on the AI's assessment, and no patient symptoms to contradict this finding. Therefore, a low, non-urgent priority is assigned in this mock scenario.",
+    "flagged_for_human_review": false
+}
+1777117739_499_Mock_FHIR_R4_Pushing	Pushing Mock FHIR R4	{"resourceType": "ClinicalImpression", "status": "completed", "subject": {"reference": "Patient/MOCK-123", "display": "Jane Doe"}, "description": "This is a simulated triage for a fake patient, as explicitly stated in the physician's notes. There are no actual patient symptoms provided. Automated AI analysis of the chest X-ray image indicates a 'Normal' finding.", "summary": "The physician's notes clearly state that this is a 'mock test' for a 'fake patient', with no real symptoms or medical history provided. The automated AI model analyzed the provided chest X-ray image and confidently predicted a 'Normal' finding with a 98.93% confidence score. There is no indication of abnormality or urgency based on the AI's assessment, and no patient symptoms to contradict this finding. Therefore, a low, non-urgent priority is assigned in this mock scenario.", "finding": [{"itemCodeableConcept": {"text": "No immediate clinical action is required as this is a mock test scenario for a fake patient. For a real patient with a similar normal finding and absence of symptoms, routine care would typically be recommended."}}], "extension": [{"url": "http://example.org/fhir/StructureDefinition/triage-priority", "valueInteger": 4}, {"url": "http://example.org/fhir/StructureDefinition/flagged-for-review", "valueBoolean": false}], "investigation": [{"code": {"text": "Automated AI Diagnostic Nodes"}, "item": [{"reference": "1777117716_491_Chest_XRay_Vision_Model_Result", "display": "Chest_XRay_Vision_Model: {'Prediction': 'Normal', 'Confident Score': '98.93%'}"}]}]}
+1777131225_500_File_Upload	Upload_Error	Gemini Upload Failed for NORMAL2-IM-1236-0001.jpeg: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
