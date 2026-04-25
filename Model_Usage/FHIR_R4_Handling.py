@@ -83,8 +83,10 @@ os.makedirs(activity_log_dir, exist_ok=True)
 file_path = os.path.join(activity_log_dir, f"{datetime.date.today()}.tsv")
     
 line_count = 0
+
 if os.path.exists(file_path):
-    with open(file_path, "r", encoding="utf-8") as log_file:
+    # FIX: Added errors="replace" to bypass the corrupted byte already in the file
+    with open(file_path, "r", encoding="utf-8", errors="replace") as log_file:
         line_count = len(log_file.readlines())
             
 activity_ID = f"{int(time.time())}_{line_count + 2}_Mock_FHIR_R4_Pushing"
