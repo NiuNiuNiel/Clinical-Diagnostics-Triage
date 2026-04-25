@@ -338,3 +338,108 @@ Please retry in 35.189998944s. [links {
   seconds: 35
 }
 ]
+1777110791_342_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "The user is asking for a mock triage and mock model choosing. However, no file was attached to the prompt, therefore no specialized AI diagnostic model can be chosen or executed.",
+    "requires_model": false,
+    "AI_nodes": []
+}
+1777110876_347_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "Performing a mock triage for a fake patient, analyzing the attached chest X-ray image for potential pneumonia detection using the Chest_XRay_Vision_Model.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "NORMAL2-IM-1236-0001.jpeg",
+            "headers": null
+        }
+    ]
+}
+1777110883_359_Chest_XRay_Vision_Model_Result	AI_Node_Execution	Executed Chest_XRay_Vision_Model on C:\Users\weisi\Downloads\NORMAL2-IM-1236-0001.jpeg with result: {'file_name': 'C:\\Users\\weisi\\Downloads\\NORMAL2-IM-1236-0001.jpeg', 'model_name': 'Chest_XRay_Vision_Model', 'reference_ID': 'Chest_XRay_Vision_Model_Result', 'result': {'Prediction': 'Normal', 'Confident Score': '96.23%'}}
+1777110890_360_Final_Analysis	Final_Analysis_API_Call	Final response: {
+    "triage_priority": 4,
+    "clinical_summary": "This is a mock patient scenario as per physician's notes. Automated AI model analysis of the provided image (C:\\Users\\weisi\\Downloads\\NORMAL2-IM-1236-0001.jpeg) predicts a 'Normal' finding.",
+    "recommended_action": "No immediate medical action required given the mock test nature and normal AI finding.",
+    "triage_reason": "The automated AI diagnostic model identified the image as 'Normal' with a high confidence score of 96.23%. This decision aligns with the physician's instruction for a mock triage on a fake patient, where no specific symptoms or clinical concerns were reported, thus no abnormalities were detected.",
+    "flagged_for_human_review": false
+}
+1777112303_367_Model_Choosing	Model_Choosing_API_Error	API call failed: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+1777118016_372_Model_Choosing	Model_Choosing_API_Error	API call failed: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+1777118424_377_Model_Choosing	Model_Choosing_API_Error	API call failed: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+1777118702_382_Model_Choosing	Model_Choosing_API_Error	API call failed: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+1777118881_387_Model_Choosing	Model_Choosing_API_Error	API call failed: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+1777119828_392_Model_Choosing	Model_Choosing_API_Error	API call failed: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+1777121692_397_Model_Choosing	Model_Choosing_API_Call	Response: {
+  "response_summary": "The user is requesting a mock triage and model selection. However, no file was attached to the prompt, so no specific AI model can be selected or executed.",
+  "requires_model": false,
+  "AI_nodes": []
+}
+1777121829_402_Model_Choosing	Model_Choosing_API_Call	Response: {
+    "response_summary": "Performing a mock triage for a fake patient by analyzing the provided chest X-ray image using the Chest X-Ray Vision Model to detect potential pneumonia.",
+    "requires_model": true,
+    "AI_nodes": [
+        {
+            "model_name": "Chest_XRay_Vision_Model",
+            "modifications": null,
+            "file_path": "NORMAL2-IM-1236-0001.jpeg",
+            "headers": null
+        }
+    ]
+}
+1777121830_414_Chest_XRay_Vision_Model_Result	AI_Node_Execution	Executed Chest_XRay_Vision_Model on C:\Users\weisi\Downloads\NORMAL2-IM-1236-0001.jpeg with result: {'file_name': 'C:\\Users\\weisi\\Downloads\\NORMAL2-IM-1236-0001.jpeg', 'model_name': 'Chest_XRay_Vision_Model', 'reference_ID': 'Chest_XRay_Vision_Model_Result', 'result': {'Prediction': 'Normal', 'Confident Score': '96.23%'}}
+1777121839_415_Final_Analysis	Final_Analysis_API_Call	Final response: {
+    "triage_priority": 4,
+    "clinical_summary": "This record is for a mock patient as part of a simulated triage exercise. The attached image (C:\\Users\\weisi\\Downloads\\NORMAL2-IM-1236-0001.jpeg) was analyzed by an AI model.",
+    "recommended_action": "No immediate clinical action required. This record is part of a mock test and can be archived or used for training purposes.",
+    "triage_reason": "The AI diagnostic model identified the image as 'Normal' with a high confidence score of 96.23%. Given that this is a mock test for a fake patient with no actual symptoms provided, and the AI finding is normal and highly confident, no escalation is necessary. The AI findings are clear and not contradictory.",
+    "flagged_for_human_review": false
+}
+1777122922_422_Model_Choosing	Model_Choosing_API_Error	API call failed: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+1777123390_427_Model_Choosing	Model_Choosing_API_Error	API call failed: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+1777124053_432_Model_Choosing	Model_Choosing_API_Error	API call failed: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+1777124275_437_Model_Choosing	Model_Choosing_API_Error	API call failed: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+1777124338_442_Model_Choosing	Model_Choosing_API_Error	API call failed: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
