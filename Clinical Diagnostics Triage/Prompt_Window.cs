@@ -193,7 +193,7 @@ namespace Clinical_Diagnostics_Triage
             catch (TaskCanceledException) { }
         }
 
-        private async Task TriggerFHIRPushAsync(List<AiNodeResult> aiNodesResults)
+        private async Task TriggerFHIRPushAsync(TriagePayload payload)
         {
             try
             {
@@ -201,13 +201,16 @@ namespace Clinical_Diagnostics_Triage
                 rtbChatHistory.AppendText("\n[System]: Initiating FHIR R4 payload push...\n");
                 rtbChatHistory.ScrollToCaret();
 
-                // 1. Serialize ONLY the AI Nodes Results as requested
-                string fhirJson = JsonSerializer.Serialize(aiNodesResults);
+                // CHANGED: Serialize the entire payload object, not just the list
+                string fhirJson = JsonSerializer.Serialize(payload);
 
                 // 2. Save it to a temp file to bypass command line character limits
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
                 string tempFilePath = Path.Combine(baseDir, "fhir_payload.json");
-                await File.WriteAllTextAsync(tempFilePath, fhirJson);
+
+                File.WriteAllText(tempFilePath, fhirJson);
+
+                await Task.Delay(100);
 
                 // Target the FHIR_R4_Handling.py script
                 string scriptPath = Path.Combine(baseDir, "FHIR_R4_Handling.py");
@@ -395,8 +398,8 @@ namespace Clinical_Diagnostics_Triage
 
                             if (pushResult == DialogResult.Yes)
                             {
-                                // Await the FHIR script execution, passing only the AI_nodes_results
-                                await TriggerFHIRPushAsync(payload.AI_nodes_results);
+                                // CHANGED: Pass the full 'payload' instead of 'payload.AI_nodes_results'
+                                await TriggerFHIRPushAsync(payload);
                             }
                         }
                     }
