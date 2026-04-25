@@ -16,11 +16,12 @@ from pathlib import Path
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 
+
 def activity_logger(ID, _type, details):
-    activity_log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Activity_Log')
+    activity_log_dir = os.path.join(repo_root, 'Activity_Log')
     os.makedirs(activity_log_dir, exist_ok=True)
     
-    file_path = f"{activity_log_dir}/{datetime.date.today()}.tsv"
+    file_path = os.path.join(activity_log_dir, f"{datetime.date.today()}.tsv")
     
     line_count = 0
     if os.path.exists(file_path):
@@ -88,8 +89,9 @@ def modification_func(data, modification):
 def AI_node(model_name, modifications, file_path, headers):
 
     if model_name == "Clinical_Note_Summarization_Model":
-        tokenizer = AutoTokenizer.from_pretrained("Clinical_Note_Summarization_Model")
-        model = AutoModelForSeq2SeqLM.from_pretrained("Clinical_Note_Summarization_Model")
+        model_path = os.path.join(models_dir, "Clinical_Note_Summarization_Model")
+        tokenizer = AutoTokenizer.from_pretrained(model_path)
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
 
         inputs = tokenizer(file_path, return_tensors="pt", max_length=512, truncation=True)
 
@@ -99,7 +101,8 @@ def AI_node(model_name, modifications, file_path, headers):
 
         return summary
 
-    model = load_model(model_name + ".keras")
+    keras_model_path = os.path.join(models_dir, f"{model_name}.keras")
+    model = load_model(keras_model_path)
 
     file_data = read_file(file_path, headers=headers)
 
@@ -130,23 +133,25 @@ def AI_node(model_name, modifications, file_path, headers):
 
     return result
 
-def upload_files(files, url = "https://api.z.ai/api/paas/v4/files"):
+# AFTER — use the ZaiClient SDK directly
+def upload_files(files, url="https://api.ilmu.ai/api/paas/v4/files"):
     file_IDs = []
     for file in files:
         file_type = file.split(".")[-1].lower()
-
         with open(file, "rb") as f:
             _files = {
-                "file": (file, f, mime_map.get(file_type))
+                "file": (os.path.basename(file), f, mime_map.get(file_type, "application/octet-stream"))
             }
-            data = {
-                "purpose": "agent"
-            }
-    
+            data = {"purpose": "retrieval"}
             response = requests.post(url, headers=headers, files=_files, data=data)
 
-        file_IDs.append(response.json()["id"])
-    
+        if not response.ok:
+            error_msg = f"API Upload Failed (HTTP {response.status_code}): {response.text}"
+            raise Exception(error_msg)
+
+        response_json = response.json()
+        file_IDs.append(response_json["id"])
+
     return file_IDs
 
 def estimate_token(text, input_type):
@@ -156,6 +161,12 @@ def estimate_token(text, input_type):
         return Path(text).stat().st_size / 4
     else:
         return 1445
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", "..", ".."))
+
+api_key_path = os.path.join(repo_root, "Model_Usage", "api_key.txt")
+models_dir = os.path.join(repo_root, "Model_Usage", "Models")
 
 context_window = 200000
 
@@ -177,17 +188,19 @@ mime_map = {
 }
 
 
-with open("API_key.txt", "r") as f:
+with open(api_key_path, "r") as f:
     API_key = f.read().strip()
 
 headers = {"Authorization": f"Bearer {API_key}"}
-
-file_IDs = upload_files(files_attached) if files_attached[0] != "None" else []
 
 GLM_model = zai.ZaiClient(
     api_key=API_key,
     base_url="https://api.ilmu.ai/v1"
     )
+
+file_IDs = upload_files(files_attached) if files_attached[0] != "None" else []
+
+
 
 classes = {"Heartbeat_Abnormality_Model" : ['Normal', 'Supraventricular Ectopic Beats', 'Ventricular Ectopic Beats', 'Fusion Beats', 'Unknown'],
            "Chest_XRay_Vision_Model" : ['Normal', 'Pneumonia'],

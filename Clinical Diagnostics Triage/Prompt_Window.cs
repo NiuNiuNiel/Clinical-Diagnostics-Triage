@@ -12,7 +12,7 @@ using System.Windows.Forms;
 
 namespace Clinical_Diagnostics_Triage
 {
-    public partial class Form1 : Form
+    public partial class Prompt_Window : Form
     {
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern IntPtr SendMessage(IntPtr hWnd, int wMsg, int wParam, ref Point lParam);
@@ -30,10 +30,11 @@ namespace Clinical_Diagnostics_Triage
             int nHeightEllipse // How curved the height is (Higher = rounder)
         );
         private List<ChatMessage> currentSessionHistory = new List<ChatMessage>();
-        private string attachedFilePath = string.Empty;
+        private string attachedNotePath = string.Empty;
+        private List<string> attachedBiomedicalFiles = new List<string>();
         private bool isFirstPrompt = true;
 
-        public Form1()
+        public Prompt_Window()
         {
             InitializeComponent();
         }
@@ -41,28 +42,34 @@ namespace Clinical_Diagnostics_Triage
         // ==========================================
         // THE PYTHON ENGINE (STREAMING REAL-TIME)
         // ==========================================
-        private async Task<TriagePayload?> RunPythonBackendAsync(string userPrompt, string filePath, Action<string> onRealTimeLog)
+        private async Task<TriagePayload?> RunPythonBackendAsync(string userPrompt, string notePath, List<string> bmFiles, Action<string> onRealTimeLog)
         {
             return await Task.Run(async () =>
             {
-                string pythonExePath = @"C:\Users\weisi\AppData\Local\Programs\Python\Python312\python.exe";
-                if (!File.Exists(pythonExePath)) throw new FileNotFoundException($"Could not find Python at: {pythonExePath}");
-
+                string pythonExePath = "python";
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                DirectoryInfo dirInfo = new DirectoryInfo(baseDir);
-                while (dirInfo != null && !Directory.Exists(Path.Combine(dirInfo.FullName, "Model_Usage")))
-                {
-                    dirInfo = dirInfo.Parent;
-                }
-                if (dirInfo == null) throw new Exception("Could not locate the Model_Usage project folder.");
+                string scriptPath = Path.Combine(baseDir, "Model_Usage.py");
 
-                string pythonProjectFolder = Path.Combine(dirInfo.FullName, "Model_Usage");
-                string scriptPath = Path.Combine(pythonProjectFolder, "Model_Usage.py");
-                if (!File.Exists(scriptPath)) throw new FileNotFoundException($"Could not find script at: {scriptPath}");
+                if (!File.Exists(scriptPath))
+                    throw new FileNotFoundException($"Could not find script at: {scriptPath}. Ensure the project was built successfully.");
 
                 string safePrompt = string.IsNullOrWhiteSpace(userPrompt) ? "None" : userPrompt.Replace("\"", "\\\"");
-                string safeFile = string.IsNullOrWhiteSpace(filePath) ? "None" : filePath;
-                string arguments = $"\"{scriptPath}\" \"{safePrompt}\" \"{safeFile}\" \"None\"";
+                string safeNoteFile = string.IsNullOrWhiteSpace(notePath) ? "None" : notePath;
+
+                // Build the arguments for sys.argv[3:]
+                string bmFilesArgs = "None";
+                if (bmFiles != null && bmFiles.Count > 0)
+                {
+                    List<string> quotedFiles = new List<string>();
+                    foreach (string f in bmFiles)
+                    {
+                        quotedFiles.Add($"\"{f}\"");
+                    }
+                    bmFilesArgs = string.Join(" ", quotedFiles);
+                }
+
+                // Construct the final Python command
+                string arguments = $"-u \"{scriptPath}\" \"{safePrompt}\" \"{safeNoteFile}\" {bmFilesArgs}";        
 
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
@@ -70,51 +77,88 @@ namespace Clinical_Diagnostics_Triage
                     Arguments = arguments,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true,
+                    RedirectStandardError = true, // We must read this if it's set to true
                     CreateNoWindow = true,
-                    WorkingDirectory = pythonProjectFolder
+                    WorkingDirectory = baseDir
                 };
 
                 using (Process process = Process.Start(startInfo))
                 {
                     if (process == null) throw new Exception("Failed to start the AI backend.");
 
-                    StringBuilder rawJson = new StringBuilder();
-                    bool isJsonBlock = false;
+                    StringBuilder jsonRaw = new StringBuilder();
+                    bool isCapturingOutput = false;
 
+                    // Read standard output asynchronously
                     while (!process.StandardOutput.EndOfStream)
                     {
                         string? line = await process.StandardOutput.ReadLineAsync();
                         if (string.IsNullOrWhiteSpace(line)) continue;
 
-                        if (line.Contains("{")) isJsonBlock = true;
-
-                        if (isJsonBlock)
+                        if (line.Contains("<Thinking Process>"))
                         {
-                            rawJson.AppendLine(line);
+                            string step = line.Replace("<Thinking Process>", "").Replace("</Thinking Process>", "").Trim();
+                            if (!string.IsNullOrWhiteSpace(step))
+                            {
+                                onRealTimeLog?.Invoke(step);
+                            }
                         }
-                        else
+                        else if (line.Contains("<Output>"))
                         {
-                            onRealTimeLog?.Invoke(line);
+                            isCapturingOutput = true;
+                            string content = line.Replace("<Output>", "");
+
+                            if (content.Contains("</Output>"))
+                            {
+                                jsonRaw.AppendLine(content.Replace("</Output>", ""));
+                                isCapturingOutput = false;
+                                break;
+                            }
+                            else
+                            {
+                                jsonRaw.AppendLine(content);
+                            }
+                        }
+                        else if (isCapturingOutput)
+                        {
+                            if (line.Contains("</Output>"))
+                            {
+                                jsonRaw.AppendLine(line.Replace("</Output>", ""));
+                                isCapturingOutput = false;
+                                break;
+                            }
+                            else
+                            {
+                                jsonRaw.AppendLine(line);
+                            }
                         }
                     }
 
+                    // FIX 2: Capture any fatal Python crashes/Tracebacks
                     string errors = await process.StandardError.ReadToEndAsync();
+
                     process.WaitForExit();
 
-                    if (!string.IsNullOrEmpty(errors) && rawJson.Length == 0) throw new Exception("Backend Error: " + errors);
-
-                    if (rawJson.Length > 0)
+                    // If Python crashed before spitting out JSON, throw the Python traceback to the UI
+                    if (!string.IsNullOrWhiteSpace(errors) && string.IsNullOrEmpty(jsonRaw.ToString().Trim()))
                     {
-                        string cleanJson = rawJson.ToString().Replace("'", "\"").Replace("True", "true").Replace("False", "false").Replace("None", "null");
-                        int start = cleanJson.IndexOf('{');
-                        int end = cleanJson.LastIndexOf('}');
-                        if (start != -1 && end != -1)
+                        throw new Exception($"Python execution failed:\n{errors}");
+                    }
+
+                    string finalJsonString = jsonRaw.ToString().Trim();
+                    if (!string.IsNullOrEmpty(finalJsonString))
+                    {
+                        try
                         {
-                            cleanJson = cleanJson.Substring(start, end - start + 1);
-                            return JsonSerializer.Deserialize<TriagePayload>(cleanJson);
+                            finalJsonString = finalJsonString.Replace("'", "\"").Replace("True", "true").Replace("False", "false").Replace("None", "null");
+                            return JsonSerializer.Deserialize<TriagePayload>(finalJsonString);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"Failed to parse JSON output: {ex.Message}\nRaw: {finalJsonString}");
                         }
                     }
+
                     return null;
                 }
             });
@@ -156,40 +200,48 @@ namespace Clinical_Diagnostics_Triage
         private async void btnSend_Click(object sender, EventArgs e)
         {
             string prompt = txtInput.Text;
-            string file = attachedFilePath;
+            string noteFile = attachedNotePath;
+            List<string> bmFiles = new List<string>(attachedBiomedicalFiles); // Take a snapshot
 
-            if (string.IsNullOrWhiteSpace(prompt))
+            if (string.IsNullOrWhiteSpace(prompt) && string.IsNullOrWhiteSpace(noteFile))
             {
-                MessageBox.Show("Please enter clinical notes before sending.", "Input Required", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please enter clinical notes or attach a note document before sending.", "Input Required", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // 1. Lock UI
+            // 1. Lock UI (Make sure to lock BOTH attach buttons)
             btnSend.Enabled = false;
             txtInput.Enabled = false;
-            btnAttach.Enabled = false;
+            btnAttach_Note.Enabled = false;
+            bmFile_attachBtn.Enabled = false;
             string originalButtonText = btnSend.Text;
 
             if (isFirstPrompt)
             {
-                // Grab the first 35 characters of the prompt, or the whole thing if it's shorter
                 string titleText = prompt.Length > 35 ? prompt.Substring(0, 35) + "..." : prompt;
                 lblTitle.Text = titleText;
-                isFirstPrompt = false; // Prevent it from changing again until New Patient is clicked
+                isFirstPrompt = false;
             }
 
             // 2. Print User Input
             rtbChatHistory.SelectionColor = Color.LightSkyBlue;
             rtbChatHistory.AppendText($"\nPhysician:\n{prompt}\n");
 
-            if (!string.IsNullOrEmpty(file))
+            if (!string.IsNullOrEmpty(noteFile))
             {
                 rtbChatHistory.SelectionColor = Color.MediumPurple;
-                rtbChatHistory.AppendText($"[File Included: {Path.GetFileName(file)}]\n");
+                rtbChatHistory.AppendText($"[Note Included: {Path.GetFileName(noteFile)}]\n");
             }
 
-            rtbChatHistory.SelectionColor = Color.DarkGray;
-            rtbChatHistory.AppendText("\nCopilot: System routing initiated...\n");
+            foreach (string f in bmFiles)
+            {
+                rtbChatHistory.SelectionColor = Color.SkyBlue;
+                rtbChatHistory.AppendText($"[Biomedical Data Included: {Path.GetFileName(f)}]\n");
+            }
+
+            // Prepare the Chat History for the thinking process
+            rtbChatHistory.SelectionColor = Color.WhiteSmoke;
+            rtbChatHistory.AppendText("\n--------------------\nThinking...\n");
 
             // 3. Setup streaming and animation
             using (CancellationTokenSource cts = new CancellationTokenSource())
@@ -198,38 +250,49 @@ namespace Clinical_Diagnostics_Triage
 
                 try
                 {
-                    Action<string> updateChatRealTime = (logText) =>
+                    bool isFirstThinkingStep = true;
+
+                    Action<string> updateChatRealTime = null;
+
+                    // 2. Now assign the logic to it
+                    updateChatRealTime = (stepText) =>
                     {
                         if (rtbChatHistory.InvokeRequired)
                         {
-                            rtbChatHistory.Invoke(new Action(() =>
-                            {
-                                rtbChatHistory.SelectionColor = Color.DarkGray;
-                                rtbChatHistory.AppendText($"[System Output]: {logText}\n");
-                                rtbChatHistory.ScrollToCaret();
-                            }));
+                            rtbChatHistory.Invoke(new Action(() => updateChatRealTime(stepText)));
+                            return;
                         }
-                        else
+
+                        rtbChatHistory.SelectionColor = Color.WhiteSmoke;
+
+                        // Add the visual connector if it's not the first step
+                        if (!isFirstThinkingStep)
                         {
-                            rtbChatHistory.SelectionColor = Color.DarkGray;
-                            rtbChatHistory.AppendText($"[System Output]: {logText}\n");
-                            rtbChatHistory.ScrollToCaret();
+                            rtbChatHistory.AppendText("     |\n");
                         }
+
+                        rtbChatHistory.AppendText($"{stepText}\n");
+                        rtbChatHistory.ScrollToCaret();
+
+                        isFirstThinkingStep = false;
                     };
 
                     // 4. Run Backend
-                    var payload = await RunPythonBackendAsync(prompt, file, updateChatRealTime);
+                    var payload = await RunPythonBackendAsync(prompt, noteFile, bmFiles, updateChatRealTime);
 
                     // Stop animation
                     cts.Cancel();
 
-                    // 5. Print Results
+                    // 5. Print Final Results
                     if (payload != null)
                     {
                         rtbChatHistory.SelectionColor = Color.WhiteSmoke;
-                        rtbChatHistory.AppendText("\n--- DIAGNOSTIC TRIAGE ALERT ---\n");
+                        rtbChatHistory.AppendText("--------------------\n");
 
-                        // Check if the integer priority is 1
+                        rtbChatHistory.SelectionColor = Color.WhiteSmoke;
+                        rtbChatHistory.AppendText("\nOutput:\n");
+
+                        // Priority coloring
                         rtbChatHistory.SelectionColor = payload.triage_priority == 1 ? Color.Tomato : Color.Gold;
                         rtbChatHistory.AppendText($"Priority: Level {payload.triage_priority}\n");
 
@@ -238,24 +301,12 @@ namespace Clinical_Diagnostics_Triage
                         rtbChatHistory.AppendText($"Reason: {payload.triage_reason}\n");
                         rtbChatHistory.AppendText($"Action: {payload.recommended_action}\n");
 
-                        // Print AI Node Results if the backend used them
-                        if (payload.AI_nodes_results != null && payload.AI_nodes_results.Count > 0)
-                        {
-                            rtbChatHistory.SelectionColor = Color.LightSkyBlue;
-                            rtbChatHistory.AppendText("\n[Automated AI Findings]:\n");
-                            foreach (var node in payload.AI_nodes_results)
-                            {
-                                rtbChatHistory.AppendText($"- {node.model_name} ({node.file_name})\n");
-                                rtbChatHistory.AppendText($"  {node.result.ToString()}\n");
-                            }
-                        }
-
-                        // Custom Human Intervention Warning
+                        // Human Intervention Warning
                         if (payload.flagged_for_human_review)
                         {
                             rtbChatHistory.SelectionColor = Color.Tomato;
                             rtbChatHistory.AppendText("\n⚠️ HUMAN INTERVENTION REQUIRED ⚠️\n");
-                            rtbChatHistory.AppendText("The AI node results are flagged as potentially incorrect, ambiguous, or inaccurate. Manual physician review is strictly required.\n");
+                            rtbChatHistory.AppendText("Manual physician review is strictly required due to flagged ambiguity.\n");
                         }
                     }
                 }
@@ -271,9 +322,13 @@ namespace Clinical_Diagnostics_Triage
                     btnSend.Text = originalButtonText;
                     btnSend.Enabled = true;
                     txtInput.Enabled = true;
-                    btnAttach.Enabled = true;
+                    btnAttach_Note.Enabled = true;
+                    bmFile_attachBtn.Enabled = true; // Unlock the new button
                     txtInput.Clear();
-                    attachedFilePath = string.Empty;
+
+                    // Clear both trackers
+                    attachedNotePath = string.Empty;
+                    attachedBiomedicalFiles.Clear();
                 }
             }
         }
@@ -282,14 +337,40 @@ namespace Clinical_Diagnostics_Triage
         {
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                openFileDialog.Filter = "Medical Data|*.csv;*.tsv;*.json;*.png;*.jpg;*.jpeg|All files (*.*)|*.*";
-                openFileDialog.Title = "Attach Patient File (ECG or X-Ray)";
+                // Strictly clinical notes
+                openFileDialog.Filter = "Clinical Notes|*.txt;*.docx;*.pdf";
+                openFileDialog.Title = "Attach Clinical Note Document";
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    attachedFilePath = openFileDialog.FileName;
+                    attachedNotePath = openFileDialog.FileName;
                     rtbChatHistory.SelectionColor = Color.MediumSpringGreen;
-                    rtbChatHistory.AppendText($"\n[System]: Attached file -> {Path.GetFileName(attachedFilePath)}\n");
+                    rtbChatHistory.AppendText($"\n[System]: Attached Clinical Note -> {Path.GetFileName(attachedNotePath)}\n");
+                    rtbChatHistory.SelectionColor = rtbChatHistory.ForeColor;
+                }
+            }
+        }
+
+        private void bmFile_attachBtn_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                // Strictly biomedical models
+                openFileDialog.Filter = "Biomedical Data|*.csv;*.tsv;*.json;*.png;*.jpg;*.jpeg";
+                openFileDialog.Title = "Attach Biomedical Data (ECG, X-Ray, etc.)";
+                openFileDialog.Multiselect = true; // Allows attaching multiple AI nodes at once
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    foreach (string file in openFileDialog.FileNames)
+                    {
+                        if (!attachedBiomedicalFiles.Contains(file))
+                        {
+                            attachedBiomedicalFiles.Add(file);
+                            rtbChatHistory.SelectionColor = Color.SkyBlue;
+                            rtbChatHistory.AppendText($"\n[System]: Attached Biomedical Data -> {Path.GetFileName(file)}\n");
+                        }
+                    }
                     rtbChatHistory.SelectionColor = rtbChatHistory.ForeColor;
                 }
             }
@@ -300,9 +381,11 @@ namespace Clinical_Diagnostics_Triage
             currentSessionHistory.Clear();
             rtbChatHistory.Clear();
             txtInput.Clear();
-            attachedFilePath = string.Empty;
 
-            // Reset the title and the tracker
+            // Clear both variables
+            attachedNotePath = string.Empty;
+            attachedBiomedicalFiles.Clear();
+
             isFirstPrompt = true;
             lblTitle.Text = "Clinical Copilot";
         }
@@ -377,7 +460,7 @@ namespace Clinical_Diagnostics_Triage
             btnSend.Region = System.Drawing.Region.FromHrgn(CreateRoundRectRgn(0, 0, btnSend.Width, btnSend.Height, 15, 15));
 
             // 2. Round the Attach Button
-            btnAttach.Region = System.Drawing.Region.FromHrgn(CreateRoundRectRgn(0, 0, btnAttach.Width, btnAttach.Height, 15, 15));
+            btnAttach_Note.Region = System.Drawing.Region.FromHrgn(CreateRoundRectRgn(0, 0, btnAttach_Note.Width, btnAttach_Note.Height, 15, 15));
 
             // 3. Round the Text Box
             // NOTE: WinForms text boxes must have BorderStyle set to None for this to look good!

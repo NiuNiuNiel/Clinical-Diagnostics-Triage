@@ -22,7 +22,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FHIR_R4_Handling.py" />
-    <Compile Include="Model_Usage.py" />
+    <None Include="Model_Usage.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models\" />

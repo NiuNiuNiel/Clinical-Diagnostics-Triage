@@ -1,6 +1,6 @@
 ﻿namespace Clinical_Diagnostics_Triage
 {
-    partial class Form1
+    partial class Prompt_Window
     {
         /// <summary>
         ///  Required designer variable.
@@ -31,10 +31,13 @@
             rtbChatHistory = new RichTextBox();
             txtInput = new TextBox();
             btnSend = new Button();
-            btnAttach = new Button();
+            btnAttach_Note = new Button();
             btnNewPatient = new Button();
             lblTitle = new Label();
             poisonVScrollBar1 = new ReaLTaiizor.Controls.PoisonScrollBar();
+            bmFile_attachBtn = new Button();
+            label1 = new Label();
+            label2 = new Label();
             SuspendLayout();
             // 
             // rtbChatHistory
@@ -78,19 +81,19 @@
             btnSend.UseVisualStyleBackColor = false;
             btnSend.Click += btnSend_Click;
             // 
-            // btnAttach
+            // btnAttach_Note
             // 
-            btnAttach.BackColor = Color.FromArgb(64, 64, 64);
-            btnAttach.Cursor = Cursors.Hand;
-            btnAttach.FlatAppearance.BorderSize = 0;
-            btnAttach.FlatStyle = FlatStyle.Flat;
-            btnAttach.Location = new Point(51, 456);
-            btnAttach.Name = "btnAttach";
-            btnAttach.Size = new Size(106, 33);
-            btnAttach.TabIndex = 3;
-            btnAttach.Text = "📎";
-            btnAttach.UseVisualStyleBackColor = false;
-            btnAttach.Click += btnAttach_Click;
+            btnAttach_Note.BackColor = Color.FromArgb(64, 64, 64);
+            btnAttach_Note.Cursor = Cursors.Hand;
+            btnAttach_Note.FlatAppearance.BorderSize = 0;
+            btnAttach_Note.FlatStyle = FlatStyle.Flat;
+            btnAttach_Note.Location = new Point(145, 456);
+            btnAttach_Note.Name = "btnAttach_Note";
+            btnAttach_Note.Size = new Size(106, 33);
+            btnAttach_Note.TabIndex = 3;
+            btnAttach_Note.Text = "📎";
+            btnAttach_Note.UseVisualStyleBackColor = false;
+            btnAttach_Note.Click += btnAttach_Click;
             // 
             // btnNewPatient
             // 
@@ -111,7 +114,7 @@
             lblTitle.AutoSize = true;
             lblTitle.Location = new Point(426, 22);
             lblTitle.Name = "lblTitle";
-            lblTitle.Size = new Size(55, 23);
+            lblTitle.Size = new Size(45, 19);
             lblTitle.TabIndex = 5;
             lblTitle.Text = "label1";
             // 
@@ -131,22 +134,57 @@
             poisonVScrollBar1.UseSelectable = true;
             poisonVScrollBar1.Scroll += poisonVScrollBar1_Scroll;
             // 
-            // Form1
+            // bmFile_attachBtn
             // 
-            AutoScaleDimensions = new SizeF(9F, 23F);
+            bmFile_attachBtn.BackColor = Color.FromArgb(64, 64, 64);
+            bmFile_attachBtn.Cursor = Cursors.Hand;
+            bmFile_attachBtn.FlatAppearance.BorderSize = 0;
+            bmFile_attachBtn.FlatStyle = FlatStyle.Flat;
+            bmFile_attachBtn.Location = new Point(364, 456);
+            bmFile_attachBtn.Name = "bmFile_attachBtn";
+            bmFile_attachBtn.Size = new Size(106, 33);
+            bmFile_attachBtn.TabIndex = 7;
+            bmFile_attachBtn.Text = "📎";
+            bmFile_attachBtn.UseVisualStyleBackColor = false;
+            bmFile_attachBtn.Click += bmFile_attachBtn_Click;
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new Point(51, 463);
+            label1.Name = "label1";
+            label1.Size = new Size(88, 19);
+            label1.TabIndex = 8;
+            label1.Text = "Clinical Note:";
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new Point(257, 463);
+            label2.Name = "label2";
+            label2.Size = new Size(101, 19);
+            label2.TabIndex = 9;
+            label2.Text = "Biomedical File:";
+            // 
+            // Prompt_Window
+            // 
+            AutoScaleDimensions = new SizeF(8F, 19F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(30, 30, 30);
             ClientSize = new Size(900, 518);
+            Controls.Add(label2);
+            Controls.Add(label1);
+            Controls.Add(bmFile_attachBtn);
             Controls.Add(poisonVScrollBar1);
             Controls.Add(lblTitle);
             Controls.Add(btnNewPatient);
-            Controls.Add(btnAttach);
+            Controls.Add(btnAttach_Note);
             Controls.Add(btnSend);
             Controls.Add(txtInput);
             Controls.Add(rtbChatHistory);
             Font = new Font("Segoe UI", 10.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
             ForeColor = Color.WhiteSmoke;
-            Name = "Form1";
+            Name = "Prompt_Window";
             Text = "Form1";
             Load += Form1_Load;
             ResumeLayout(false);
@@ -158,9 +196,12 @@
         private RichTextBox rtbChatHistory;
         private TextBox txtInput;
         private Button btnSend;
-        private Button btnAttach;
+        private Button btnAttach_Note;
         private Button btnNewPatient;
         private Label lblTitle;
         private ReaLTaiizor.Controls.PoisonScrollBar poisonVScrollBar1;
+        private Button bmFile_attachBtn;
+        private Label label1;
+        private Label label2;
     }
 }

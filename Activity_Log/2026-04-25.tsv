@@ -1,0 +1,52 @@
+1777092558_2_File_Upload	Upload_Error	API Upload Failed (HTTP 404): {"error_msg":"404 Route Not Found"}
+
+1777093803_4_File_Upload	Upload_Error	API Upload Failed (HTTP 401): {"error":{"code":"401","message":"token expired or incorrect"}}
+1777094193_5_File_Upload	Upload_Error	SDK Upload Failed for NORMAL2-IM-1236-0001.jpeg: name 'GLM_model' is not defined
+1777094320_6_File_Upload	Upload_Error	SDK Upload Failed for NORMAL2-IM-1236-0001.jpeg: Error code: 404, with error text {"error_msg":"404 Route Not Found"}
+1777094478_7_File_Upload	Upload_Error	API Upload Failed (HTTP 404): {"error_msg":"404 Route Not Found"}
+
+1777094561_9_File_Upload	Upload_Error	API Upload Failed (HTTP 404): {"error_msg":"404 Route Not Found"}
+
+1777094693_11_File_Upload	Upload_Error	API Upload Failed (HTTP 404): {"error_msg":"404 Route Not Found"}
+
+1777095606_13_Model_Choosing	Model_Choosing_API_Call	Model choosing response: {
+    "response_summary": "User requested a mock triage for a fake patient, but no files were attached and no specific clinical symptoms were provided to trigger any specialized AI diagnostic models.",
+    "requires_model": false,
+    "AI_nodes": []
+}
+1777095617_18_Final_Analysis	Final_Analysis_API_Call	Final analysis response: {
+    "triage_priority": 4,
+    "clinical_summary": "Mock test scenario. No actual patient symptoms, vital signs, or medical history provided. The physician notes explicitly request a simulated triage for a fake patient.",
+    "recommended_action": "No clinical action required. Proceed with system validation and testing protocols.",
+    "triage_reason": "The clinical notes explicitly indicate that this is a mock test with a fake patient and no real clinical data provided. Therefore, the lowest non-urgent priority is assigned to successfully complete the system test without triggering unnecessary clinical alarms.",
+    "flagged_for_human_review": false
+}
+1777097816_25_Model_Choosing	Model_Choosing_API_Call	Model choosing response: {
+    "response_summary": "The user requested a mock triage and model selection for an attached file, but no specific file path or clinical notes with relevant symptoms were provided. Therefore, no AI model can be triggered.",
+    "requires_model": false,
+    "AI_nodes": []
+}
+1777099358_30_Model_Choosing	Model_Choosing_API_Call	Model choosing response: {
+    "response_summary": "The user's input is insufficient and lacks clinical context or attached files. No diagnostic models are triggered.",
+    "requires_model": false,
+    "AI_nodes": []
+}
+1777099402_35_Final_Analysis	Final_Analysis_API_Call	Final analysis response: {
+    "triage_priority": 5,
+    "clinical_summary": "Insufficient clinical data provided. The physician notes contain only the character 's', with no discernible symptoms, patient history, or clinical context available for assessment.",
+    "recommended_action": "Flag for immediate human review to clarify and obtain proper clinical documentation.",
+    "triage_reason": "Automated triage is impossible due to the complete absence of clinical information in the provided notes. The input is invalid and requires human intervention to ensure patient safety and accurate triage.",
+    "flagged_for_human_review": true
+}
+1777099493_42_Model_Choosing	Model_Choosing_API_Call	Model choosing response: {
+    "response_summary": "The user requested a mock triage for a fake patient, but no clinical files were attached. Since no signal or image data was provided, no specialized AI diagnostic models are triggered.",
+    "requires_model": false,
+    "AI_nodes": []
+}
+1777099506_47_Final_Analysis	Final_Analysis_API_Call	Final analysis response: {
+    "triage_priority": 5,
+    "clinical_summary": "Physician notes explicitly request a mock triage assessment for a fake patient. No actual clinical symptoms, patient history, or medical data are provided.",
+    "recommended_action": "Acknowledge mock test completion; no clinical intervention or patient follow-up is required.",
+    "triage_reason": "The provided notes state this is a mock test without any real clinical data to analyze. As there are no symptoms or AI findings to synthesize, the case is assigned priority 5 and flagged for human review to confirm it is a deliberate system test and not an erroneous or incomplete submission.",
+    "flagged_for_human_review": true
+}
